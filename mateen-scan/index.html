@@ -22,9 +22,12 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 #last{min-height:22px;font-size:15px;color:var(--wood2);text-align:center}
 #queue{font-size:13px;color:var(--warn);text-align:center}
 #mode{display:inline-block;margin-top:4px;font-size:11px;font-weight:800;letter-spacing:.08em;background:#F2C14E;color:#3B2719;border-radius:6px;padding:2px 8px}
-#tlog{width:min(100%,360px);display:flex;flex-direction:column;gap:6px}
-#tlog div{display:flex;justify-content:space-between;gap:10px;background:#fff;border-radius:10px;padding:8px 12px;font-size:14px}
-#tlog b{font-family:ui-monospace,Menlo,monospace}#tlog span{color:var(--wood2)}
+#tlog{width:min(100%,380px);display:flex;flex-direction:column;gap:6px}
+#tlog .row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border-radius:10px;padding:8px 8px 8px 12px;font-size:14px}
+#tlog .txt{display:flex;flex-direction:column;min-width:0}
+#tlog b{font-family:ui-monospace,Menlo,monospace}#tlog span{color:var(--wood2);font-size:13px}
+#tlog .off{opacity:.55}#tlog .off b{text-decoration:line-through}
+#tlog .ub{flex:none;min-height:40px;padding:8px 12px;border:1.5px solid var(--bad);border-radius:8px;background:#fff;color:var(--bad);font-size:13px;font-weight:800;letter-spacing:.05em}
 .full{position:fixed;inset:0;z-index:5}
 #cam{background:#000}
 #cam video{width:100%;height:100%;object-fit:cover}
@@ -40,6 +43,11 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 #res .msg{font-size:15px;opacity:.9;max-width:320px}
 #res .tap{position:absolute;bottom:calc(30px + env(safe-area-inset-bottom,0px));font-size:14px;opacity:.85}
 #res .pbtn{margin-top:14px;min-width:220px;padding:18px 26px;border:0;border-radius:16px;background:#fff;color:var(--bad);font-size:22px;font-weight:800;letter-spacing:.06em}
+#res.ask{background:var(--wood)}
+#res .two{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+#res .two .pbtn{min-width:180px}
+#res .nbtn{margin-top:14px;min-width:120px;padding:18px 26px;border:2px solid #fff;border-radius:16px;background:transparent;color:#fff;font-size:22px;font-weight:800}
+#res .ubig{margin-top:22px;min-width:250px;padding:16px 24px;border:2px solid #fff;border-radius:14px;background:rgba(0,0,0,.12);color:#fff;font-size:18px;font-weight:800;letter-spacing:.05em}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -66,9 +74,9 @@ var $=function(id){return document.getElementById(id)},stream=null,timer=null,bu
 function gas(){return !!(window.google&&google.script&&google.script.run)}
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
 function today(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
-function count(add){var k='cnt.'+today(),n=+(ls(k)||0)+(add||0);if(add)ls(k,String(n));$('cnt').textContent=n}
+function count(add){var k='cnt.'+today(),n=Math.max(0,+(ls(k)||0)+(add||0));if(add)ls(k,String(n));$('cnt').textContent=n}
 function queue(){try{return JSON.parse(ls('queue')||'[]')}catch(e){return []}}
-function setQueue(q){ls('queue',JSON.stringify(q));$('queue').textContent=q.length?q.length+' scan(s) saved on this phone · sending when online':''}
+function setQueue(q){ls('queue',JSON.stringify(q));$('queue').textContent=q.length?q.length+' update(s) saved on this phone · sending when online':''}
 function parse(t){t=String(t||'').trim().toUpperCase().replace(/\s+/g,'');var m=/^([A-Z0-9-]+)\.([A-Z0-9]{1,3})$/.exec(t);return m?{code:t,no:m[1],st:m[2]}:null}
 function beep(ok){try{var a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=ok?1250:330;o.connect(g);g.connect(a.destination);g.gain.value=.18;o.start();o.stop(a.currentTime+(ok?.12:.35))}catch(e){}if(navigator.vibrate)navigator.vibrate(ok?90:[60,60,60])}
 function show(c,big,p,msg){var r=$('res');r.className='full '+c;r.hidden=false;
@@ -82,23 +90,57 @@ function send(p){var dev=(navigator.userAgent||'').slice(0,60);
   return fetch(API,{method:'POST',body:JSON.stringify({code:p.code,device:dev})}).then(function(r){return r.json()})}
 /* no bridge link yet (and not opened from Apps Script) → TEST MODE: scans are kept on this phone only */
 function testMode(){return !gas()&&API.indexOf('https://')!==0}
-function tlog(){try{return JSON.parse(ls('testlog')||'[]')}catch(e){return []}}
+function sendUndo(code){var dev=(navigator.userAgent||'').slice(0,60);
+  if(gas())return new Promise(function(ok,no){google.script.run.withSuccessHandler(ok).withFailureHandler(no).undoScan(code,dev)});
+  if(API.indexOf('https://')!==0)return Promise.resolve({ok:true});
+  return fetch(API,{method:'POST',body:JSON.stringify({code:code,device:dev,action:'undo'})}).then(function(r){return r.json()})}
+/* this phone's recent scans: {c:code, t:time, s:'ok'|'queued'|'undone'|'undoq', m:'test'|'live'} */
+function slog(){try{var L=JSON.parse(ls('scanlog')||'null');if(L)return L;return JSON.parse(ls('testlog')||'[]').map(function(x){return {c:x.c,t:x.t,s:'ok',m:'test'}})}catch(e){return []}}
+function setLog(L){ls('scanlog',JSON.stringify(L.slice(0,60)));showLog()}
+function active(L,code){for(var i=0;i<L.length;i++)if(L[i].c===code&&(L[i].s==='ok'||L[i].s==='queued'))return i;return -1}
+function addLog(code,st){var L=slog();L.unshift({c:code,t:Date.now(),s:st,m:testMode()?'test':'live'});setLog(L)}
 function hhmm(t){var d=new Date(t);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
-function showLog(){var box=$('tlog');box.textContent='';if(!testMode())return;tlog().slice(0,6).forEach(function(x){var q=parse(x.c),d=document.createElement('div'),a=document.createElement('b'),b=document.createElement('span');
-  a.textContent=q?q.no+' · '+q.st:x.c;b.textContent=(q&&STG[q.st]?STG[q.st]+' · ':'')+hhmm(x.t);d.appendChild(a);d.appendChild(b);box.appendChild(d)})}
+function showLog(){var box=$('tlog'),m=testMode()?'test':'live';box.textContent='';
+  slog().filter(function(x){return (x.m||'test')===m}).slice(0,6).forEach(function(x){var q=parse(x.c),d=document.createElement('div'),w=document.createElement('div'),a=document.createElement('b'),b=document.createElement('span'),off=x.s==='undone'||x.s==='undoq';
+    d.className='row'+(off?' off':'');w.className='txt';a.textContent=q?q.no+' · '+q.st:x.c;
+    b.textContent=(q&&STG[q.st]?STG[q.st]+' · ':'')+hhmm(x.t)+(x.s==='undone'?' · UNDONE':x.s==='undoq'?' · undo waiting':x.s==='queued'?' · waiting':'');
+    w.appendChild(a);w.appendChild(b);d.appendChild(w);
+    if(!off){var u=document.createElement('button');u.type='button';u.className='ub';u.textContent='UNDO';u.setAttribute('data-c',x.c);d.appendChild(u)}
+    box.appendChild(d)})}
+function lastTxt(p){$('last').textContent='Last: '+p.no+' · '+(STG[p.st]||p.st)}
+/* DONE screen with the MISTAKE button (stays 6 s) */
+function showDone(p,msg,big,c){show(c||'ok',big||'DONE ✓',p,msg);var r=$('res'),b=document.createElement('button');
+  b.type='button';b.id='undo';b.className='ubig';b.textContent='✕ MISTAKE · UNDO';b.setAttribute('data-c',p.code);r.insertBefore(b,r.querySelector('.tap'));
+  clearTimeout(back);back=setTimeout(home,6000)}
 function handle(raw){var p=parse(raw);if(!p){beep(false);show('bad','WRONG CODE',null,'This is not a Mateen task code.');return}
-  if(testMode()){var L=tlog();
-    if(L.some(function(x){return x.c===p.code})){beep(false);show('dup','ALREADY DONE',p,'Test mode · scanned before on this phone.');return}
-    L.unshift({c:p.code,t:Date.now()});ls('testlog',JSON.stringify(L.slice(0,60)));beep(true);count(1);$('last').textContent='Last: '+p.no+' · '+(STG[p.st]||p.st);showLog();
-    show('ok','DONE ✓',p,'Test mode · saved on this phone only.');return}
+  var L=slog(),i=active(L,p.code);
+  if(testMode()){
+    if(i>=0){beep(false);show('dup','ALREADY DONE',p,'Test mode · scanned before on this phone.');return}
+    addLog(p.code,'ok');beep(true);count(1);lastTxt(p);showDone(p,'Test mode · saved on this phone only.');return}
+  if(i>=0&&L[i].s==='queued'){beep(false);show('dup','ALREADY DONE',p,'Already saved on this phone · waiting for internet.');return}
   show('wait','Saving…',p,'');
   send(p).then(function(j){
     if(j&&j.setup){beep(false);show('bad','NOT SET UP',p,'The bridge link is missing. Ask the office.');return}
-    if(j&&j.ok&&!j.dup){beep(true);count(1);$('last').textContent='Last: '+p.no+' · '+(STG[p.st]||p.st);show('ok','DONE ✓',p,'Saved on the dashboard.')}
+    if(j&&j.ok&&!j.dup){beep(true);count(1);addLog(p.code,'ok');lastTxt(p);showDone(p,'Saved on the dashboard.')}
     else if(j&&j.ok&&j.dup){beep(false);show('dup','ALREADY DONE',p,'This task was scanned before.')}
     else{beep(false);show('bad','WRONG CODE',p,'Not accepted ('+(j&&j.err||'error')+').')}
-  }).catch(function(){var q=queue();if(!q.some(function(x){return x===p.code})){q.push(p.code);setQueue(q)}beep(true);count(1);show('dup','SAVED ON PHONE',p,'No internet. It will be sent automatically.')})}
-function flush(){var q=queue();if(!q.length||(!gas()&&API.indexOf('https://')!==0))return;var c=q[0];send(parse(c)).then(function(j){if(j&&j.ok){setQueue(queue().filter(function(x){return x!==c}));flush()}}).catch(function(){})}
+  }).catch(function(){var q=queue();if(q.indexOf(p.code)<0){q.push(p.code);setQueue(q)}beep(true);count(1);addLog(p.code,'queued');lastTxt(p);
+    showDone(p,'No internet. It will be sent automatically.','SAVED ON PHONE','dup')})}
+/* undo a scan made by mistake: the row is marked «undone» on the sheet (nothing is deleted) */
+function askUndo(code){var p=parse(code),r=$('res');clearTimeout(back);r.className='full ask';r.hidden=false;
+  r.innerHTML='<div class="big">UNDO?</div><div class="stage"></div><div class="ord"></div><div class="msg">Only if this code was scanned by mistake.</div><div class="two"><button type="button" id="yes" class="pbtn">YES, UNDO</button><button type="button" id="no" class="nbtn">NO</button></div>';
+  r.querySelector('.stage').textContent=p&&STG[p.st]?STG[p.st]:(p?p.st:'');r.querySelector('.ord').textContent=p?p.no:code;r.querySelector('#yes').setAttribute('data-c',code)}
+function doUndo(code){var p=parse(code),L=slog(),i=active(L,code);if(i<0){home();showLog();return}
+  function fin(st,big,msg){var M=slog(),k=active(M,code);if(k>=0){M[k].s=st;setLog(M)}count(-1);if(p)$('last').textContent='Undone: '+p.no+' · '+(STG[p.st]||p.st);beep(false);show('dup',big,p,msg)}
+  if(testMode()){fin('undone','UNDONE ↩','Removed. Now scan the right code.');return}
+  if(L[i].s==='queued'){setQueue(queue().filter(function(x){return x!==code}));fin('undone','UNDONE ↩','Removed. Now scan the right code.');return}
+  show('wait','Undoing…',p,'');
+  sendUndo(code).then(function(j){if(j&&j.ok)fin('undone','UNDONE ↩','Removed from the dashboard. Now scan the right code.');else{beep(false);show('bad','NOT UNDONE',p,'Try again ('+(j&&j.err||'error')+').')}})
+    .catch(function(){var q=queue();if(q.indexOf('!'+code)<0){q.push('!'+code);setQueue(q)}fin('undoq','UNDO SAVED','No internet. The undo will be sent automatically.')})}
+function flush(){var q=queue();if(!q.length||testMode())return;var c=q[0],u=c.charAt(0)==='!',code=u?c.slice(1):c;
+  (u?sendUndo(code):send(parse(code))).then(function(j){if(!(j&&j.ok))return;setQueue(queue().filter(function(x){return x!==c}));
+    var L=slog();for(var k=0;k<L.length;k++)if(L[k].c===code&&L[k].s===(u?'undoq':'queued')){L[k].s=u?'undone':'ok';setLog(L);break}
+    flush()}).catch(function(){})}
 function stop(){clearInterval(timer);timer=null;if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}$('cam').hidden=true;busy=false}
 function hit(t){if(busy)return;busy=true;stop();handle(t)}
 /* decoders: the phone's own BarcodeDetector (Android Chrome) + zxing-cpp (wasm) for iPhone and as a second try */
@@ -141,10 +183,16 @@ $('pic').addEventListener('change',function(){var f=this.files&&this.files[0];if
   readPic(f).then(function(t){handle(t)},function(){beep(false);show('bad','NO CODE',null,'Could not read the QR. Take the photo closer, flat and sharp.')})});
 $('scan').addEventListener('click',start);
 $('close').addEventListener('click',stop);
-$('res').addEventListener('click',function(ev){if(ev.target&&ev.target.id==='usepic'){photo();return}if(!$('res').classList.contains('wait'))home()});
+$('res').addEventListener('click',function(ev){var t=ev.target&&ev.target.closest?ev.target.closest('button'):null,id=t&&t.id;
+  if(id==='usepic'){photo();return}
+  if(id==='undo'||id==='yes'){doUndo(t.getAttribute('data-c'));return}
+  if(id==='no'){home();return}
+  var r=$('res');if(!r.classList.contains('wait')&&!r.classList.contains('ask'))home()});
+$('tlog').addEventListener('click',function(ev){var t=ev.target&&ev.target.closest?ev.target.closest('button.ub'):null;if(t)askUndo(t.getAttribute('data-c'))});
 window.addEventListener('online',flush);
 count(0);setQueue(queue());flush();
-if(testMode()){$('mode').hidden=false;showLog()}
+if(testMode())$('mode').hidden=false;
+showLog();
 /* load the reader early so the first scan is fast */
 try{if(window.ZXingWASM)ZXingWASM.prepareZXingModule({fireImmediately:true}).catch(function(){})}catch(e){}
 /* a task link opened from the normal camera: ?c=301287151.P1 */
