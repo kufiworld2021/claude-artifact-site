@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3B2719">
+<title>Mateen Scan</title>
+<style>
+:root{--wood:#3B2719;--wood2:#6E4B34;--sand:#F3EBDF;--ink:#1E1914;--ok:#1F8A4C;--warn:#B7801A;--bad:#B23A2A;--card:#FFFFFF}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--sand);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+header{background:var(--wood);color:#fff;padding:calc(14px + env(safe-area-inset-top,0px)) 20px 16px;display:flex;align-items:center;justify-content:space-between}
+header b{font-size:20px;letter-spacing:.06em}
+header span{font-size:13px;opacity:.85}
+header em{font-style:normal;text-align:right;font-size:11px;letter-spacing:.08em;opacity:.9}
+header em strong{display:block;font-size:26px;letter-spacing:0}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:20px}
+#scan{width:min(70vw,260px);aspect-ratio:1;border-radius:50%;border:0;background:var(--wood);color:#fff;font-size:34px;font-weight:800;letter-spacing:.08em;box-shadow:0 10px 30px rgba(59,39,25,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+#scan svg{width:64px;height:64px}
+#scan:active{transform:scale(.97)}
+#last{min-height:22px;font-size:15px;color:var(--wood2);text-align:center}
+#queue{font-size:13px;color:var(--warn);text-align:center}
+#mode{display:inline-block;margin-top:4px;font-size:11px;font-weight:800;letter-spacing:.08em;background:#F2C14E;color:#3B2719;border-radius:6px;padding:2px 8px}
+#tlog{width:min(100%,360px);display:flex;flex-direction:column;gap:6px}
+#tlog div{display:flex;justify-content:space-between;gap:10px;background:#fff;border-radius:10px;padding:8px 12px;font-size:14px}
+#tlog b{font-family:ui-monospace,Menlo,monospace}#tlog span{color:var(--wood2)}
+.full{position:fixed;inset:0;z-index:5}
+#cam{background:#000}
+#cam video{width:100%;height:100%;object-fit:cover}
+#cam .frame{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+#cam .frame i{width:min(72vw,300px);aspect-ratio:1;border:4px solid #fff;border-radius:18px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+#cam .tip{position:absolute;left:0;right:0;bottom:calc(90px + env(safe-area-inset-bottom,0px));text-align:center;color:#fff;font-size:16px;font-weight:600}
+#close{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:16px;width:52px;height:52px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:26px}
+#res{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;color:#fff}
+#res.ok{background:var(--ok)}#res.dup{background:var(--warn)}#res.bad{background:var(--bad)}#res.wait{background:var(--wood2)}
+#res .big{font-size:46px;font-weight:900;line-height:1}
+#res .stage{font-size:26px;font-weight:700}
+#res .ord{font-size:20px;font-family:ui-monospace,Menlo,monospace;opacity:.95}
+#res .msg{font-size:15px;opacity:.9;max-width:320px}
+#res .tap{position:absolute;bottom:calc(30px + env(safe-area-inset-bottom,0px));font-size:14px;opacity:.85}
+#res .pbtn{margin-top:14px;min-width:220px;padding:18px 26px;border:0;border-radius:16px;background:#fff;color:var(--bad);font-size:22px;font-weight:800;letter-spacing:.06em}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><div><b>MATEEN · SCAN</b><br><span id="cyc">Factory floor updates</span><br><span id="mode" hidden>TEST MODE · saved on this phone only</span></div><em><strong id="cnt">0</strong>DONE TODAY</em></header>
+<main>
+  <button id="scan" type="button" aria-label="Scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></svg>SCAN</button>
+  <div id="last"></div>
+  <div id="queue"></div>
+  <div id="tlog"></div>
+</main>
+<section id="cam" class="full" hidden><video id="v" playsinline muted></video><div class="frame"><i></i></div><div class="tip">Point at the task QR · 20–30 cm away</div><button id="close" type="button" aria-label="Close">×</button></section>
+<section id="res" class="full" hidden></section>
+<input type="file" id="pic" accept="image/*" capture="environment" hidden>
+<script src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.5/dist/iife/reader/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+(function(){
+/* the Apps Script web-app URL of the sheet «Mateen Scans · مسح المهام» */
+var API='PASTE_WEB_APP_URL_HERE';
+var STG={P1:'Tab cutting',P2:'Body cutting',P3:'Back & decor',P4:'Drilling',P5:'Tab balancing',P9:'Base balancing',P8:'Body balancing',P6:'Tab edge banding',PA:'Base edge banding',P7:'Body edge banding',CL:'Long cladding',IK:'IKEA design',LD:'LED in top',AC:'Accessories',K1:'Tab wrapping',K2:'Body boxes',KF:'Box filling',K3:'PKG wrapping',W1:'AWB piece 1',W2:'AWB piece 2',W3:'AWB piece 3',W4:'AWB piece 4',W5:'AWB piece 5',W6:'AWB piece 6'};
+var $=function(id){return document.getElementById(id)},stream=null,timer=null,busy=false,back=null,liveFail=false;
+/* opened from the Apps Script link: save through google.script.run (no API link needed) */
+function gas(){return !!(window.google&&google.script&&google.script.run)}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function today(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function count(add){var k='cnt.'+today(),n=+(ls(k)||0)+(add||0);if(add)ls(k,String(n));$('cnt').textContent=n}
+function queue(){try{return JSON.parse(ls('queue')||'[]')}catch(e){return []}}
+function setQueue(q){ls('queue',JSON.stringify(q));$('queue').textContent=q.length?q.length+' scan(s) saved on this phone · sending when online':''}
+function parse(t){t=String(t||'').trim().toUpperCase().replace(/\s+/g,'');var m=/^([A-Z0-9-]+)\.([A-Z0-9]{1,3})$/.exec(t);return m?{code:t,no:m[1],st:m[2]}:null}
+function beep(ok){try{var a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=ok?1250:330;o.connect(g);g.connect(a.destination);g.gain.value=.18;o.start();o.stop(a.currentTime+(ok?.12:.35))}catch(e){}if(navigator.vibrate)navigator.vibrate(ok?90:[60,60,60])}
+function show(c,big,p,msg){var r=$('res');r.className='full '+c;r.hidden=false;
+  r.innerHTML='<div class="big"></div><div class="stage"></div><div class="ord"></div><div class="msg"></div><div class="tap">Tap to continue</div>';
+  r.querySelector('.big').textContent=big;r.querySelector('.stage').textContent=p&&STG[p.st]?STG[p.st]:(p?p.st:'');r.querySelector('.ord').textContent=p?p.no:'';r.querySelector('.msg').textContent=msg||'';
+  clearTimeout(back);if(c!=='wait')back=setTimeout(home,2600)}
+function home(){clearTimeout(back);$('res').hidden=true}
+function send(p){var dev=(navigator.userAgent||'').slice(0,60);
+  if(gas())return new Promise(function(ok,no){google.script.run.withSuccessHandler(ok).withFailureHandler(no).saveScan(p.code,dev)});
+  if(API.indexOf('https://')!==0)return Promise.resolve({setup:true});
+  return fetch(API,{method:'POST',body:JSON.stringify({code:p.code,device:dev})}).then(function(r){return r.json()})}
+/* no bridge link yet (and not opened from Apps Script) → TEST MODE: scans are kept on this phone only */
+function testMode(){return !gas()&&API.indexOf('https://')!==0}
+function tlog(){try{return JSON.parse(ls('testlog')||'[]')}catch(e){return []}}
+function hhmm(t){var d=new Date(t);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+function showLog(){var box=$('tlog');box.textContent='';if(!testMode())return;tlog().slice(0,6).forEach(function(x){var q=parse(x.c),d=document.createElement('div'),a=document.createElement('b'),b=document.createElement('span');
+  a.textContent=q?q.no+' · '+q.st:x.c;b.textContent=(q&&STG[q.st]?STG[q.st]+' · ':'')+hhmm(x.t);d.appendChild(a);d.appendChild(b);box.appendChild(d)})}
+function handle(raw){var p=parse(raw);if(!p){beep(false);show('bad','WRONG CODE',null,'This is not a Mateen task code.');return}
+  if(testMode()){var L=tlog();
+    if(L.some(function(x){return x.c===p.code})){beep(false);show('dup','ALREADY DONE',p,'Test mode · scanned before on this phone.');return}
+    L.unshift({c:p.code,t:Date.now()});ls('testlog',JSON.stringify(L.slice(0,60)));beep(true);count(1);$('last').textContent='Last: '+p.no+' · '+(STG[p.st]||p.st);showLog();
+    show('ok','DONE ✓',p,'Test mode · saved on this phone only.');return}
+  show('wait','Saving…',p,'');
+  send(p).then(function(j){
+    if(j&&j.setup){beep(false);show('bad','NOT SET UP',p,'The bridge link is missing. Ask the office.');return}
+    if(j&&j.ok&&!j.dup){beep(true);count(1);$('last').textContent='Last: '+p.no+' · '+(STG[p.st]||p.st);show('ok','DONE ✓',p,'Saved on the dashboard.')}
+    else if(j&&j.ok&&j.dup){beep(false);show('dup','ALREADY DONE',p,'This task was scanned before.')}
+    else{beep(false);show('bad','WRONG CODE',p,'Not accepted ('+(j&&j.err||'error')+').')}
+  }).catch(function(){var q=queue();if(!q.some(function(x){return x===p.code})){q.push(p.code);setQueue(q)}beep(true);count(1);show('dup','SAVED ON PHONE',p,'No internet. It will be sent automatically.')})}
+function flush(){var q=queue();if(!q.length||(!gas()&&API.indexOf('https://')!==0))return;var c=q[0];send(parse(c)).then(function(j){if(j&&j.ok){setQueue(queue().filter(function(x){return x!==c}));flush()}}).catch(function(){})}
+function stop(){clearInterval(timer);timer=null;if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}$('cam').hidden=true;busy=false}
+function hit(t){if(busy)return;busy=true;stop();handle(t)}
+/* decoders: the phone's own BarcodeDetector (Android Chrome) + zxing-cpp (wasm) for iPhone and as a second try */
+var OPT={formats:['QRCode'],tryHarder:true,maxNumberOfSymbols:1};
+function zw(){return !!(window.ZXingWASM&&ZXingWASM.readBarcodes)}
+function mkBD(){try{return 'BarcodeDetector' in window?new BarcodeDetector({formats:['qr_code']}):null}catch(e){return null}}
+function zwData(d){return ZXingWASM.readBarcodes(d,OPT).then(function(r){return r&&r.length&&r[0].text?r[0].text:null})}
+/* if the wasm reader cannot load (blocked or offline), jsQR (plain JS) takes over */
+var zwBad=false;
+function jq(d){try{if(window.jsQR){var r=jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'});return r&&r.data||null}}catch(e){}return null}
+function hasSoft(){return (zw()&&!zwBad)||!!window.jsQR}
+function soft(d){if(zw()&&!zwBad)return zwData(d).catch(function(){zwBad=true;return jq(d)});return Promise.resolve(jq(d))}
+function grab(src,w,h,max){var k=Math.min(1,max/Math.max(w,h)),c=document.createElement('canvas'),x;c.width=Math.round(w*k);c.height=Math.round(h*k);
+  x=c.getContext('2d',{willReadFrequently:true});x.drawImage(src,0,0,c.width,c.height);return {c:c,d:x.getImageData(0,0,c.width,c.height)}}
+/* live camera needs the https link opened in Chrome/Safari; otherwise the phone camera app takes a photo */
+function canLive(){return !liveFail&&!!(window.isSecureContext&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)}
+function start(){home();busy=false;
+  if(!canLive()){if(liveFail){photo();return}askPhoto({name:window.isSecureContext?'NoCamera':'NotHttps'});return}
+  $('cam').hidden=false;var v=$('v'),req;
+  try{req=navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false})}catch(e){liveFail=true;stop();askPhoto(e);return}
+  req.then(function(s){stream=s;v.srcObject=s;
+    try{var tr=s.getVideoTracks()[0],cp=tr.getCapabilities&&tr.getCapabilities();if(cp&&cp.focusMode&&cp.focusMode.indexOf('continuous')>=0)tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(function(){})}catch(e){}
+    return v.play()}).then(function(){var bd=mkBD(),n=0,fly=false;
+    if(!bd&&!hasSoft()){liveFail=true;stop();askPhoto({name:'NoScanner'});return}
+    timer=setInterval(function(){if(busy||!stream||!v.videoWidth||fly)return;fly=true;n++;
+      var job=bd&&(!hasSoft()||n%3)?bd.detect(v).then(function(r){return r&&r.length?r[0].rawValue:null}):soft(grab(v,v.videoWidth,v.videoHeight,zw()&&!zwBad?1920:1280).d);
+      job.then(function(t){fly=false;if(t)hit(t)},function(){fly=false})},180)
+  }).catch(function(e){liveFail=true;stop();askPhoto(e)})}
+function askPhoto(e){var n=(e&&e.name)||'',r=$('res');clearTimeout(back);r.className='full bad';r.hidden=false;
+  r.innerHTML='<div class="big">CAMERA BLOCKED</div><div class="msg"></div><button id="usepic" class="pbtn" type="button">TAKE PHOTO</button><div class="tap">Tap outside to go back</div>';
+  r.querySelector('.msg').textContent=(n==='NotAllowedError'?'The camera is not allowed for this page. Allow it in the browser settings, or':n==='NotHttps'?'Live scanning works only from the scanner link in Chrome or Safari. For now,':'The live camera does not work here. Please')+' take a photo of the QR.'+(n?' ('+n+')':'')}
+function photo(){var f=$('pic');f.value='';f.click()}
+function loadImg(f){if(window.createImageBitmap)return createImageBitmap(f);return new Promise(function(ok,no){var i=new Image();i.onload=function(){ok(i)};i.onerror=no;i.src=URL.createObjectURL(f)})}
+function readPic(f){return loadImg(f).then(function(img){var W=img.width,H=img.height,sizes=[1600,2600,1000],i=0,bd=mkBD();
+  function next(){if(i>=sizes.length)return Promise.reject(new Error('none'));var g=grab(img,W,H,sizes[i++]);
+    var a=bd?bd.detect(g.c).then(function(r){return r&&r.length?r[0].rawValue:null},function(){return null}):Promise.resolve(null);
+    return a.then(function(t){return t||soft(g.d)}).then(function(t){return t||next()},function(){return next()})}
+  return next()})}
+$('pic').addEventListener('change',function(){var f=this.files&&this.files[0];if(!f)return;show('wait','Reading…',null,'');
+  readPic(f).then(function(t){handle(t)},function(){beep(false);show('bad','NO CODE',null,'Could not read the QR. Take the photo closer, flat and sharp.')})});
+$('scan').addEventListener('click',start);
+$('close').addEventListener('click',stop);
+$('res').addEventListener('click',function(ev){if(ev.target&&ev.target.id==='usepic'){photo();return}if(!$('res').classList.contains('wait'))home()});
+window.addEventListener('online',flush);
+count(0);setQueue(queue());flush();
+if(testMode()){$('mode').hidden=false;showLog()}
+/* load the reader early so the first scan is fast */
+try{if(window.ZXingWASM)ZXingWASM.prepareZXingModule({fireImmediately:true}).catch(function(){})}catch(e){}
+/* a task link opened from the normal camera: ?c=301287151.P1 */
+if(gas()&&google.script.url){google.script.url.getLocation(function(l){var c=l&&l.parameter&&l.parameter.c;if(c)handle(c)})}
+else{var q=new URLSearchParams(location.search).get('c');if(q){history.replaceState(null,'',location.pathname);handle(q)}}
+})();
+</script>
+</body>
+</html>
