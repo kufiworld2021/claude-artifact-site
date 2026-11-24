@@ -67,7 +67,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 <script>
 (function(){
 /* the Apps Script web-app URL of the sheet «Mateen Scans · مسح المهام» */
-var API='PASTE_WEB_APP_URL_HERE';
+var API='https://script.google.com/macros/s/AKfycbwRmVnZL-xQihVj-hjFLhSJwSIeQfMCfi2r6xUy6h_TSddMUIK0ePBHJ2Zd2-_3ylOVKw/exec';
 var STG={P1:'Tab cutting',P2:'Body cutting',P3:'Back & decor',P4:'Drilling',P5:'Tab balancing',P9:'Base balancing',P8:'Body balancing',P6:'Tab edge banding',PA:'Base edge banding',P7:'Body edge banding',CL:'Long cladding',IK:'IKEA design',LD:'LED in top',AC:'Accessories',K1:'Tab wrapping',K2:'Body boxes',KF:'Box filling',K3:'PKG wrapping',W1:'AWB piece 1',W2:'AWB piece 2',W3:'AWB piece 3',W4:'AWB piece 4',W5:'AWB piece 5',W6:'AWB piece 6'};
 var $=function(id){return document.getElementById(id)},stream=null,timer=null,busy=false,back=null,liveFail=false;
 /* opened from the Apps Script link: save through google.script.run (no API link needed) */
@@ -125,7 +125,7 @@ function handle(raw){var p=parse(raw);if(!p){beep(false);show('bad','WRONG CODE'
     else if(j&&j.ok&&j.dup){beep(false);show('dup','ALREADY DONE',p,'This task was scanned before.')}
     else{beep(false);show('bad','WRONG CODE',p,'Not accepted ('+(j&&j.err||'error')+').')}
   }).catch(function(){var q=queue();if(q.indexOf(p.code)<0){q.push(p.code);setQueue(q)}beep(true);count(1);addLog(p.code,'queued');lastTxt(p);
-    showDone(p,'No internet. It will be sent automatically.','SAVED ON PHONE','dup')})}
+    showDone(p,navigator.onLine===false?'No internet. It will be sent automatically.':'Could not reach the dashboard. Saved on this phone, it will be sent automatically.','SAVED ON PHONE','dup')})}
 /* undo a scan made by mistake: the row is marked «undone» on the sheet (nothing is deleted) */
 function askUndo(code){var p=parse(code),r=$('res');clearTimeout(back);r.className='full ask';r.hidden=false;
   r.innerHTML='<div class="big">UNDO?</div><div class="stage"></div><div class="ord"></div><div class="msg">Only if this code was scanned by mistake.</div><div class="two"><button type="button" id="yes" class="pbtn">YES, UNDO</button><button type="button" id="no" class="nbtn">NO</button></div>';
@@ -136,7 +136,7 @@ function doUndo(code){var p=parse(code),L=slog(),i=active(L,code);if(i<0){home()
   if(L[i].s==='queued'){setQueue(queue().filter(function(x){return x!==code}));fin('undone','UNDONE ↩','Removed. Now scan the right code.');return}
   show('wait','Undoing…',p,'');
   sendUndo(code).then(function(j){if(j&&j.ok)fin('undone','UNDONE ↩','Removed from the dashboard. Now scan the right code.');else{beep(false);show('bad','NOT UNDONE',p,'Try again ('+(j&&j.err||'error')+').')}})
-    .catch(function(){var q=queue();if(q.indexOf('!'+code)<0){q.push('!'+code);setQueue(q)}fin('undoq','UNDO SAVED','No internet. The undo will be sent automatically.')})}
+    .catch(function(){var q=queue();if(q.indexOf('!'+code)<0){q.push('!'+code);setQueue(q)}fin('undoq','UNDO SAVED',navigator.onLine===false?'No internet. The undo will be sent automatically.':'Could not reach the dashboard. The undo will be sent automatically.')})}
 function flush(){var q=queue();if(!q.length||testMode())return;var c=q[0],u=c.charAt(0)==='!',code=u?c.slice(1):c;
   (u?sendUndo(code):send(parse(code))).then(function(j){if(!(j&&j.ok))return;setQueue(queue().filter(function(x){return x!==c}));
     var L=slog();for(var k=0;k<L.length;k++)if(L[k].c===code&&L[k].s===(u?'undoq':'queued')){L[k].s=u?'undone':'ok';setLog(L);break}
