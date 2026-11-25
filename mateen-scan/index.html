@@ -67,6 +67,17 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .lrow{display:flex;align-items:center;gap:10px;margin-top:6px}
 .lrow b{display:block}
 .meta{color:var(--mute);font-size:12px}
+/* records on the home (owner 25/11/2026: «للعمال كمان… يقدر يلغي التحضير… وتحت سجلات كلها»): every scan of this phone, newest first, each with its own undo */
+.logc{flex:none;margin:auto 14px calc(16px + env(safe-area-inset-bottom,0px));background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px 14px 6px}
+.logc>small{display:block;font-size:10.5px;color:var(--mute);font-weight:700;letter-spacing:.04em;margin-bottom:2px}
+.logc .lrow{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+.logc small+.lrow{border-top:0}
+.logc .lw{flex:1;min-width:0}
+.logc .lw b{overflow-wrap:anywhere}
+.logc .off .lw{opacity:.55}
+.logc .off b{text-decoration:line-through}
+.chk.x{background:var(--mute);box-shadow:none}
+.ub{flex:none;min-height:40px;padding:6px 12px;border:1px solid var(--line);border-radius:99px;background:#fff;color:var(--bad);font-size:12.5px;font-weight:700;white-space:nowrap}
 /* the approved check: green disc · white ring · white tick */
 .chk{border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
 .chk.s{width:28px;height:28px;font-size:13px;box-shadow:inset 0 0 0 2px var(--ok),inset 0 0 0 3.5px #fff}
@@ -124,7 +135,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
   <div id="ios" hidden>📲 عشان تثبّته كتطبيق: اضغط زر المشاركة <b>⎋</b> تحت، بعدها <b>«إضافة إلى الشاشة الرئيسية»</b></div>
   <div id="mode" hidden>TEST MODE · saved on this phone only</div>
   <div id="queue"></div>
-  <div class="lastc" id="lastc"></div>
+  <div class="logc" id="logc"></div>
 </div>
 </div>
 <section id="cam" class="full" hidden><video id="v" playsinline muted></video><canvas id="ov"></canvas>
@@ -172,7 +183,7 @@ function sendUndo(code){var dev=(navigator.userAgent||'').slice(0,60);
   return fetch(API,{method:'POST',body:JSON.stringify({code:code,device:dev,action:'undo'})}).then(function(r){return r.json()})}
 /* this phone's recent scans: {c:code, t:time, s:'ok'|'queued'|'undone'|'undoq', m:'test'|'live'} */
 function slog(){try{var L=JSON.parse(ls('scanlog')||'null');if(L)return L;return JSON.parse(ls('testlog')||'[]').map(function(x){return {c:x.c,t:x.t,s:'ok',m:'test'}})}catch(e){return []}}
-function setLog(L){ls('scanlog',JSON.stringify(L.slice(0,60)));showLast()}
+function setLog(L){ls('scanlog',JSON.stringify(L.slice(0,300)));showLast()}
 function active(L,code){for(var i=0;i<L.length;i++)if(L[i].c===code&&(L[i].s==='ok'||L[i].s==='queued'))return i;return -1}
 function addLog(code,st){var L=slog();L.unshift({c:code,t:Date.now(),s:st,m:testMode()?'test':'live'});setLog(L)}
 /* the last scan card (home and scanner): the newest scan of this phone that still counts */
@@ -182,7 +193,21 @@ function lastCard(box){var m=testMode()?'test':'live',L=slog().filter(function(x
   var r=el('div','lrow'),c=el('span','chk s'),w=el('div'),b=el('b'),d=el('div','meta');c.textContent='✓';b.textContent=q.no+' · '+q.st;
   d.appendChild(document.createTextNode(STG[q.st]?en(q.st)+' · ':''));if(ar(q.st)){var a=el('span','ar');a.textContent=ar(q.st);d.appendChild(a);d.appendChild(document.createTextNode(' · '))}
   d.appendChild(document.createTextNode(hhmm(x.t)+(x.s==='queued'?' · waiting':'')));w.appendChild(b);w.appendChild(d);r.appendChild(c);r.appendChild(w);box.appendChild(r)}
-function showLast(){lastCard($('lastc'));lastCard($('lastc2'))}
+function dm(t){var d=new Date(t);return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)}
+/* the records on the home: every scan of this phone, newest first · an undone one stays in the list, struck out */
+function showLog(){var box=$('logc'),m=testMode()?'test':'live',L=slog().filter(function(x){return (x.m||'test')===m}),h=el('small'),ha=el('span','ar'),td=new Date().toDateString();
+  box.textContent='';h.appendChild(document.createTextNode('RECORDS · '));ha.textContent='السجلات';h.appendChild(ha);box.appendChild(h);
+  if(!L.length){var e=el('div','meta');e.style.margin='6px 0 8px';e.textContent='No scans yet';box.appendChild(e);return}
+  L.forEach(function(x){var q=parse(x.c),off=x.s==='undone'||x.s==='undoq',r=el('div','lrow'+(off?' off':'')),c=el('span','chk s'+(off?' x':'')),w=el('div','lw'),b=el('b'),d=el('div','meta');
+    c.textContent=off?'↩':'✓';b.textContent=q?q.no+' · '+q.st:x.c;
+    if(q&&STG[q.st]){d.appendChild(document.createTextNode(en(q.st)+' · '));var s=el('span','ar');s.textContent=ar(q.st);d.appendChild(s);d.appendChild(document.createTextNode(' · '))}
+    d.appendChild(document.createTextNode((new Date(x.t).toDateString()===td?'':dm(x.t)+' ')+hhmm(x.t)+(x.s==='undone'?' · UNDONE':x.s==='undoq'?' · undo waiting':x.s==='queued'?' · waiting':'')));
+    w.appendChild(b);w.appendChild(d);r.appendChild(c);r.appendChild(w);
+    if(!off){var u=el('button','ub'),ua=el('span','ar');u.type='button';u.setAttribute('data-c',x.c);u.appendChild(document.createTextNode('Undo · '));ua.textContent='إلغاء';u.appendChild(ua);r.appendChild(u)}
+    box.appendChild(r)})}
+function showLast(){lastCard($('lastc2'));showLog()}
+/* undo from the records: asks first, then the same undo as the 6-second button */
+function askUndo(code){var p=parse(code);fromCam=false;scr('warn','Undo this scan?',p,'Only if it was scanned by mistake.',{ic:'?',btns:[['undo','out','↩ Yes, undo · نعم إلغاء',code],['gohome','sec','No · لا']]})}
 /* what is already done on the sheet (all phones) · only for the «d / n tasks · Next» line; never blocks a scan */
 var DONE=null;try{DONE=JSON.parse(ls('done')||'null')}catch(e){}
 function pull(){if(testMode()||gas()||Date.now()-pulled<60000)return;pulled=Date.now();var at=Date.now();
@@ -325,6 +350,7 @@ $('pic').addEventListener('change',function(){var f=this.files&&this.files[0];if
   readPic(f).then(function(t){handle(t)},function(){beep(false);scr('bad','No code',null,'Could not read the QR. Take the photo closer, flat and sharp.',{btns:[['usepic','pri','Take photo'],['gohome','sec','Back']]})})});
 $('scan').addEventListener('click',function(){start()});
 $('close').addEventListener('click',function(){fromCam=false;stop()});
+$('logc').addEventListener('click',function(ev){var t=ev.target&&ev.target.closest?ev.target.closest('button.ub'):null;if(t)askUndo(t.getAttribute('data-c'))});
 $('cam').addEventListener('click',function(ev){if(ev.target&&ev.target.closest&&ev.target.closest('#close'))return;pick(ev.clientX,ev.clientY)});
 $('res').addEventListener('click',function(ev){var t=ev.target&&ev.target.closest?ev.target.closest('button'):null,id=t&&t.id;
   if(id==='usepic'){photo();return}
