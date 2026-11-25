@@ -338,7 +338,7 @@ function vmap(v){var vw=v.videoWidth||1,vh=v.videoHeight||1,cw=v.clientWidth,ch=
 function fresh(ms){var now=Date.now(),A=[];Object.keys(seen).forEach(function(t){if(now-seen[t].at<=ms)A.push({t:t,p:seen[t].p})});return A}
 function setTip(){var t=$('tip'),n=+($('cam').getAttribute('data-n')||0),a=el('span','ar');t.textContent='';
   if(tipMsg){t.className='tip no';t.appendChild(document.createTextNode(tipMsg[0]+' · '));a.textContent=tipMsg[1]}
-  else{t.className='tip';t.appendChild(document.createTextNode((n?'Tap the code you want':'Point at the code, then tap it')+' · '));a.textContent=n?'اضغط على الباركود اللي تبيه':'وجّه الكاميرا على الباركود واضغط عليه'}
+  else{t.className='tip';t.appendChild(document.createTextNode('Point the camera at the code · '));a.textContent='وجّه الكاميرا على الباركود'}
   t.appendChild(a)}
 /* a white box on every code the camera can read right now */
 function paint(){var c=$('ov'),v=$('v'),m=vmap(v),r=Math.min(2,window.devicePixelRatio||1),A=fresh(700),x;
@@ -363,7 +363,10 @@ function miss(){tipMsg=['No code under your finger','قرّب الكاميرا �
 function ring(x,y){var r=el('i','ring');r.style.left=x+'px';r.style.top=y+'px';$('cam').appendChild(r);setTimeout(function(){if(r.parentNode)r.parentNode.removeChild(r)},540)}
 /* a tap helps the camera focus on that spot (only where the phone supports it) */
 function focusAt(P,v){try{var tr=stream.getVideoTracks()[0],cp=tr.getCapabilities&&tr.getCapabilities();if(cp&&cp.focusMode&&cp.focusMode.indexOf('continuous')>=0)tr.applyConstraints({advanced:[{focusMode:'continuous',pointsOfInterest:[{x:P[0]/v.videoWidth,y:P[1]/v.videoHeight}]}]}).catch(function(){})}catch(e){}}
-/* owner 25/11/2026: the camera never scans by itself (a sheet carries many codes side by side) · the worker taps the code he wants and only that one is read */
+/* owner 25/11/2026 (16:19): every code now has its own sticker · no tap, no focus: the first code in front of the camera is scanned at once.
+   Several in view: the one nearest the middle. The code just scanned is ignored for 8 s so it is not read twice while the camera is still on it. */
+var lastHit={t:'',at:0};
+function auto(L,v,now){var W=v.videoWidth/2,H=v.videoHeight/2,best=null,bd=Infinity;L.forEach(function(a){if(!a.t||(a.t===lastHit.t&&now-lastHit.at<8000))return;var d=a.p?Math.pow(cen(a.p)[0]-W,2)+Math.pow(cen(a.p)[1]-H,2):1e12;if(d<bd){bd=d;best=a.t}});return best}
 function pick(x,y){var v=$('v');if(busy||picking||!stream||!v.videoWidth)return;var m=vmap(v),P=[(x-m.ox)/m.s,(y-m.oy)/m.s],old=nearest(fresh(600),P),job;
   ring(x,y);picking=true;
   /* first a fresh look at the spot under the finger (the phone may have moved since the boxes were drawn); the boxes are the second choice */
@@ -374,7 +377,7 @@ function canLive(){return !liveFail&&!!(window.isSecureContext&&navigator.mediaD
 function start(){home();if(stream)stop();busy=false;fromCam=true;
   if(!canLive()){if(liveFail){photo();return}askPhoto({name:window.isSecureContext?'NoCamera':'NotHttps'});return}
   var my=++sid,v=$('v'),req;seen={};tipMsg=null;$('cam').hidden=false;paint();showLast();
-  clearTimeout(idleT);idleT=setTimeout(function(){if(my===sid){fromCam=false;stop()}},90000);   /* nobody tapped for 90 s: close the camera */
+  clearTimeout(idleT);idleT=setTimeout(function(){if(my===sid){fromCam=false;stop()}},90000);   /* nothing scanned for 90 s: close the camera */
   try{req=navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false})}catch(e){liveFail=true;stop();askPhoto(e);return}
   req.then(function(s){if(my!==sid){s.getTracks().forEach(function(t){t.stop()});throw {name:'Cancelled'}}
     stream=s;v.srcObject=s;
@@ -383,7 +386,8 @@ function start(){home();if(stream)stop();busy=false;fromCam=true;
     if(!BD&&!hasSoft()){liveFail=true;stop();askPhoto({name:'NoScanner'});return}
     timer=setInterval(function(){if(busy||!stream||!v.videoWidth||fly)return;fly=true;n++;var job;
       try{job=BD&&(!hasSoft()||n%3)?bdList(BD,v,null):softList(frame(v,0,0,v.videoWidth,v.videoHeight,Math.min(1,(zw()&&!zwBad?1920:1280)/Math.max(v.videoWidth,v.videoHeight))))}catch(e){fly=false;return}
-      job.then(function(L){fly=false;if(my!==sid||!stream)return;var now=Date.now();L.forEach(function(a){if(a.p)seen[a.t]={p:a.p,at:now}});paint()},function(){fly=false})},180)
+      job.then(function(L){fly=false;if(my!==sid||!stream||busy)return;var now=Date.now();L.forEach(function(a){if(a.p)seen[a.t]={p:a.p,at:now}});paint();
+        var t=auto(L,v,now);if(t){lastHit={t:t,at:now};hit(t)}},function(){fly=false})},120)
   }).catch(function(e){if((e&&e.name==='Cancelled')||my!==sid)return;liveFail=true;stop();askPhoto(e)})}
 function askPhoto(e){var n=(e&&e.name)||'';
   scr('bad','Camera blocked',null,(n==='NotAllowedError'?'The camera is not allowed for this page. Allow it in the browser settings, or':n==='NotHttps'?'Live scanning works only from the scanner link in Chrome or Safari. For now,':'The live camera does not work here. Please')+' take a photo of the QR.'+(n?' ('+n+')':''),
@@ -491,7 +495,6 @@ $('adm').addEventListener('submit',function(ev){ev.preventDefault();var id=ev.ta
 $('scan').addEventListener('click',function(){start()});
 $('close').addEventListener('click',function(){fromCam=false;stop()});
 $('logc').addEventListener('click',function(ev){var t=ev.target&&ev.target.closest?ev.target.closest('button.ub'):null;if(t)askUndo(t.getAttribute('data-c'))});
-$('cam').addEventListener('click',function(ev){if(ev.target&&ev.target.closest&&ev.target.closest('#close'))return;pick(ev.clientX,ev.clientY)});
 $('res').addEventListener('click',function(ev){var t=ev.target&&ev.target.closest?ev.target.closest('button'):null,id=t&&t.id;
   if(id==='usepic'){photo();return}
   if(id==='undo'){doUndo(t.getAttribute('data-c'));return}
