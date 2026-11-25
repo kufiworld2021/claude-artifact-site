@@ -275,7 +275,9 @@ function scr(k,h,p,msg,o){o=o||{};var r=$('res'),b=el('div','resb'),ic=el('span'
     if(g){var bar=el('div','bar'),bi=el('i'),nx=el('div','nx');bi.style.width=Math.round(g.d/g.n*100)+'%';bar.appendChild(bi);nx.textContent=g.d+' / '+g.n+' tasks · '+(g.nx?'Next: '+en(g.nx):'All tasks done');c.appendChild(bar);c.appendChild(nx)}
     b.appendChild(c)}
   if(msg){var m=el('p','msg');m.textContent=msg;b.appendChild(m)}
-  (o.btns||[]).forEach(function(x){var u=el('button','btn '+x[1]);u.type='button';u.id=x[0];u.textContent=x[2];if(x[3])u.setAttribute('data-c',x[3]);acts.appendChild(u)});
+  /* owner 25/11/2026: every result screen has a Back to the home, so a worker can scan one or two and leave the rest for later */
+  var bt=(o.btns||[]).slice();if(bt.length&&!bt.some(function(x){return x[0]==='gohome'}))bt.push(['gohome','sec','← Back · رجوع']);
+  bt.forEach(function(x){var u=el('button','btn '+x[1]);u.type='button';u.id=x[0];u.textContent=x[2];if(x[3])u.setAttribute('data-c',x[3]);acts.appendChild(u)});
   r.appendChild(b);r.appendChild(acts);r.hidden=false;
   if(o.then)back=setTimeout(o.then,o.ms||2600)}
 function home(){clearTimeout(back);clearTimeout(cd);$('res').hidden=true}
