@@ -261,7 +261,7 @@ function askUndo(code){doUndo(code,true)}   /* undo from the records: at once, t
 var DONE=null;try{DONE=JSON.parse(ls('done')||'null')}catch(e){}
 function pull(){if(testMode()||gas()||Date.now()-pulled<60000)return;pulled=Date.now();var at=Date.now();
   fetch(API+'?rows=1').then(function(r){return r.json()}).then(function(j){if(!j||!j.ok||!j.rows)return;var D={};
-    j.rows.forEach(function(r){if(r.status==='done')(D[r.order]=D[r.order]||{})[r.stage]=1});DONE={at:at,d:D};ls('done',JSON.stringify(DONE))}).catch(function(){pulled=0})}
+    j.rows.forEach(function(r){if(r.status==='done')(D[r.order]=D[r.order]||{})[r.stage]=1});DONE={at:at,d:D};ls('done',JSON.stringify(DONE));heal(j.rows)}).catch(function(){pulled=0})}
 function prog(p){var ap=AP[p.no];if(!ap||!DONE||!DONE.d)return null;var D={},k,L=slog(),i,x,q,d=0,nx=null;for(k in (DONE.d[p.no]||{}))D[k]=1;
   for(i=L.length-1;i>=0;i--){x=L[i];q=parse(x.c);if(!q||q.no!==p.no||(x.m||'test')!=='live')continue;
     if(x.s==='queued')D[q.st]=1;else if(x.s==='undoq')delete D[q.st];else if(x.t>DONE.at){if(x.s==='ok')D[q.st]=1;else delete D[q.st]}}
@@ -297,17 +297,32 @@ function handle(raw){var p=parse(raw);if(!p){beep(false);note('bad','Not a task 
   /* owner 25/11/2026 (16:30): no «Saving…» screen · the scan shows as done at once and is sent in the background;
      if the dashboard answers «already done» or refuses it, the scan is taken back and the screen (or a note) says so */
   beep(true);count(1);addLog(p.code,'ok');showDone(p,'');
-  var job=send(p);pend[p.code]=job;
-  job.then(function(j){
+  obAdd(p.code);var job=send(p);pend[p.code]=job;
+  job.then(function(j){obDel(p.code);
     if(j&&j.setup){takeBack(p,'bad','Not set up','The bridge link is missing. Ask the office.');return}
     if(j&&j.ok&&!j.dup){pull();return}
     if(j&&j.ok&&j.dup){takeBack(p,'warn','Already done','This task was scanned before.');return}
     takeBack(p,'bad','Not accepted','The dashboard refused this code ('+(j&&j.err||'error')+').')
-  },function(){var M=slog(),k=active(M,p.code);if(k<0||M[k].s!=='ok')return;   /* undone meanwhile: nothing to send */
+  },function(){obDel(p.code);var M=slog(),k=active(M,p.code);if(k<0||M[k].s!=='ok')return;   /* undone meanwhile: nothing to send */
     M[k].s='queued';setLog(M);var q=queue();if(q.indexOf(p.code)<0){q.push(p.code);setQueue(q)}
     if(onScreen(p.code)){var m=$('res').querySelector('.msg')||el('p','msg');m.textContent=navigator.onLine===false?'No internet. Saved on this phone, it will be sent automatically.':'Could not reach the dashboard. Saved on this phone, it will be sent automatically.';if(!m.parentNode)$('res').querySelector('.resb').appendChild(m)}
   }).then(function(){if(pend[p.code]===job)delete pend[p.code]},function(){})}
 var pend={},shown='';
+/* owner 25/11/2026 18:32 (order 301287151): a scan showed done on the phone but never reached the sheet (the app was closed while it was being sent).
+   Now every scan is noted on the phone before it is sent («outbox»); a scan whose answer never came is sent again when the app opens,
+   and every minute the phone compares its scans with the sheet: a scan the sheet never got is sent again; one undone elsewhere is shown undone here. */
+function obGet(){try{return JSON.parse(ls('outbox')||'{}')}catch(e){return {}}}
+function obAdd(c){var o=obGet();o[c]=Date.now();ls('outbox',JSON.stringify(o))}
+function obDel(c){var o=obGet();if(o[c]){delete o[c];ls('outbox',JSON.stringify(o))}}
+function requeue(c){var M=slog(),k=active(M,c);if(k<0||M[k].s!=='ok')return false;M[k].s='queued';setLog(M);var q=queue();if(q.indexOf(c)<0){q.push(c);setQueue(q)}return true}
+function obHeal(){var o=obGet(),n=0;Object.keys(o).forEach(function(c){if(!pend[c]&&Date.now()-o[c]>15000){if(requeue(c))n++;delete o[c]}});ls('outbox',JSON.stringify(o));if(n)flush()}
+function heal(rows){if(testMode())return;var R={},M=slog(),ch=0,rs=0;rows.forEach(function(r){var k=String(r.order).toUpperCase()+'.'+String(r.stage).toUpperCase(),t=Date.parse(r.t);(R[k]=R[k]||[]).push({s:r.status,t:isNaN(t)?0:t})});
+  M.forEach(function(x){if((x.m||'test')!=='live'||x.s!=='ok'||pend[x.c]||Date.now()-x.t<180000)return;var L=R[x.c]||[];
+    if(L.some(function(r){return r.s==='done'}))return;
+    if(L.some(function(r){return r.s==='undone'&&(!r.t||r.t>=x.t-120000)})){x.s='undone';ch=1;return}   /* undone from Admin / the hub */
+    if(!L.some(function(r){return !r.t||r.t>=x.t-120000})){x.s='queued';var q=queue();if(q.indexOf(x.c)<0){q.push(x.c);setQueue(q)}ch=1;rs++}});
+  if(ch){setLog(M);count(0)}if(rs)flush()}
+
 function onScreen(code){return !$('res').hidden&&shown===code}
 function takeBack(p,k,h,msg){var M=slog(),x=active(M,p.code);if(x>=0&&M[x].s==='ok'){M.splice(x,1);setLog(M);count(-1)}
   beep(false);if(onScreen(p.code)){clearTimeout(cd);note(k,h,p,msg)}else lateNote(h+' · '+p.code)}
@@ -324,10 +339,10 @@ function doUndo(code,quiet){var p=parse(code),L=slog(),i=active(L,code);clearTim
   (pend[code]||Promise.resolve()).then(function(){},function(){}).then(function(){
     var q=queue();if(q.indexOf(code)>=0){setQueue(q.filter(function(x){return x!==code}));return}   /* the scan never left the phone */
     return sendUndo(code).then(function(j){if(!(j&&j.ok))later()},later)})}
-function flush(){var q=queue();if(!q.length||testMode())return;var c=q[0],u=c.charAt(0)==='!',code=u?c.slice(1):c;
-  (u?sendUndo(code):send(parse(code))).then(function(j){if(!(j&&j.ok))return;setQueue(queue().filter(function(x){return x!==c}));
+function flush(){var q=queue();if(!q.length||testMode()||flush.on)return;flush.on=1;var c=q[0],u=c.charAt(0)==='!',code=u?c.slice(1):c;
+  (u?sendUndo(code):send(parse(code))).then(function(j){if(!(j&&j.ok)){flush.on=0;return}setQueue(queue().filter(function(x){return x!==c}));
     var L=slog();for(var k=0;k<L.length;k++)if(L[k].c===code&&L[k].s===(u?'undoq':'queued')){L[k].s=u?'undone':'ok';setLog(L);break}
-    flush()}).catch(function(){})}
+    flush.on=0;flush()}).catch(function(){flush.on=0})}
 function stop(){sid++;clearInterval(timer);timer=null;clearTimeout(idleT);if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}$('cam').hidden=true;busy=false;picking=false;seen={}}
 function hit(t){if(busy)return;busy=true;stop();fromCam=true;handle(t)}
 /* decoders: the phone's own BarcodeDetector (Android Chrome) + zxing-cpp (wasm) for iPhone and as a second try; jsQR (plain JS) if the wasm reader cannot load.
@@ -517,7 +532,7 @@ window.addEventListener('online',function(){flush();pull()});
 /* the app went to the background: the camera closes */
 document.addEventListener('visibilitychange',function(){if(document.hidden){hidAt=Date.now();if(!$('cam').hidden){fromCam=false;stop()}}
   else if(AD.on&&hidAt&&Date.now()-hidAt>120000)admClose()});   /* the owner page locks itself after 2 minutes in the background */
-count(0);setQueue(queue());flush();
+count(0);setQueue(queue());obHeal();flush();pulled=0;pull();setInterval(function(){if(!document.hidden){pulled=0;pull();flush()}},60000);
 if(testMode())$('mode').hidden=false;
 showLast();setTip();pull();
 /* load the reader early so the first scan is fast */
