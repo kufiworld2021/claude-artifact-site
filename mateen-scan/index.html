@@ -256,7 +256,7 @@ function showLog(){var box=$('logc'),m=testMode()?'test':'live',L=slog().filter(
     box.appendChild(r)})}
 function showLast(){lastCard($('lastc2'));showLog()}
 /* undo from the records: asks first, then the same undo as the 6-second button */
-function askUndo(code){var p=parse(code);fromCam=false;scr('warn','Undo this scan?',p,'Only if it was scanned by mistake.',{ic:'?',btns:[['undo','out','↩ Yes, undo · نعم إلغاء',code],['gohome','sec','No · لا']]})}
+function askUndo(code){doUndo(code,true)}   /* undo from the records: at once, the home stays */
 /* what is already done on the sheet (all phones) · only for the «d / n tasks · Next» line; never blocks a scan */
 var DONE=null;try{DONE=JSON.parse(ls('done')||'null')}catch(e){}
 function pull(){if(testMode()||gas()||Date.now()-pulled<60000)return;pulled=Date.now();var at=Date.now();
@@ -285,7 +285,7 @@ function home(){clearTimeout(back);clearTimeout(cd);$('res').hidden=true}
 function again(){if(fromCam&&!liveFail&&!document.hidden)start();else home()}
 function note(k,h,p,msg,ic){scr(k,h,p,msg,{ic:ic,btns:[['next','pri','⌖ Scan again']],then:again})}
 /* DONE screen with the MISTAKE button (stays 6 s), then the scanner opens again */
-function showDone(p,msg,h,k){scr(k||'ok',h||'Task done',p,msg,{prog:true,ic:'✓',btns:[['undo','out','✕ Mistake · Undo (6)',p.code],['next','pri','⌖ Scan next']]});
+function showDone(p,msg,h,k){shown=p.code;scr(k||'ok',h||'Task done',p,msg,{prog:true,ic:'✓',btns:[['undo','out','✕ Mistake · Undo (6)',p.code],['next','pri','⌖ Scan next']]});
   cdN=6;(function tick(){cd=setTimeout(function(){var b=$('undo');if($('res').hidden||!b)return;cdN--;if(cdN<=0){again();return}b.textContent='✕ Mistake · Undo ('+cdN+')';tick()},1000)})()}
 /* one scan in «Scan operations»: only task codes ORDER.STAGE are accepted */
 function handle(raw){var p=parse(raw);if(!p){beep(false);note('bad','Not a task code',null,'BOLISA is scanned from «Scan BOLISA».');return}
@@ -293,24 +293,37 @@ function handle(raw){var p=parse(raw);if(!p){beep(false);note('bad','Not a task 
   if(testMode()){
     if(i>=0){beep(false);note('warn','Already done',p,'Test mode · scanned before on this phone.');return}
     addLog(p.code,'ok');beep(true);count(1);showDone(p,'Test mode · saved on this phone only.');return}
-  if(i>=0&&L[i].s==='queued'){beep(false);note('warn','Already done',p,'Already saved on this phone · waiting for internet.');return}
-  scr('wait','Saving…',p,'');
-  send(p).then(function(j){
-    if(j&&j.setup){beep(false);scr('bad','Not set up',p,'The bridge link is missing. Ask the office.',{btns:[['gohome','pri','Back']]});return}
-    if(j&&j.ok&&!j.dup){beep(true);count(1);addLog(p.code,'ok');showDone(p,'');pull()}
-    else if(j&&j.ok&&j.dup){beep(false);note('warn','Already done',p,'This task was scanned before.')}
-    else{beep(false);note('bad','Not accepted',p,'The dashboard refused this code ('+(j&&j.err||'error')+').')}
-  },function(){var q=queue();if(q.indexOf(p.code)<0){q.push(p.code);setQueue(q)}beep(true);count(1);addLog(p.code,'queued');
-    showDone(p,navigator.onLine===false?'No internet. It will be sent automatically.':'Could not reach the dashboard. Saved on this phone, it will be sent automatically.','Saved on phone','warn')})}
+  if(i>=0){beep(false);note('warn','Already done',p,L[i].s==='queued'?'Already saved on this phone · waiting for internet.':'This task was scanned before on this phone.');return}
+  /* owner 25/11/2026 (16:30): no «Saving…» screen · the scan shows as done at once and is sent in the background;
+     if the dashboard answers «already done» or refuses it, the scan is taken back and the screen (or a note) says so */
+  beep(true);count(1);addLog(p.code,'ok');showDone(p,'');
+  var job=send(p);pend[p.code]=job;
+  job.then(function(j){
+    if(j&&j.setup){takeBack(p,'bad','Not set up','The bridge link is missing. Ask the office.');return}
+    if(j&&j.ok&&!j.dup){pull();return}
+    if(j&&j.ok&&j.dup){takeBack(p,'warn','Already done','This task was scanned before.');return}
+    takeBack(p,'bad','Not accepted','The dashboard refused this code ('+(j&&j.err||'error')+').')
+  },function(){var M=slog(),k=active(M,p.code);if(k<0||M[k].s!=='ok')return;   /* undone meanwhile: nothing to send */
+    M[k].s='queued';setLog(M);var q=queue();if(q.indexOf(p.code)<0){q.push(p.code);setQueue(q)}
+    if(onScreen(p.code)){var m=$('res').querySelector('.msg')||el('p','msg');m.textContent=navigator.onLine===false?'No internet. Saved on this phone, it will be sent automatically.':'Could not reach the dashboard. Saved on this phone, it will be sent automatically.';if(!m.parentNode)$('res').querySelector('.resb').appendChild(m)}
+  }).then(function(){if(pend[p.code]===job)delete pend[p.code]},function(){})}
+var pend={},shown='';
+function onScreen(code){return !$('res').hidden&&shown===code}
+function takeBack(p,k,h,msg){var M=slog(),x=active(M,p.code);if(x>=0&&M[x].s==='ok'){M.splice(x,1);setLog(M);count(-1)}
+  beep(false);if(onScreen(p.code)){clearTimeout(cd);note(k,h,p,msg)}else lateNote(h+' · '+p.code)}
+function lateNote(m){var t=$('lnote');if(!t){t=el('div','toast');t.id='lnote';t.style.zIndex=30;document.body.appendChild(t)}t.textContent=m;t.hidden=false;clearTimeout(lateNote.t);lateNote.t=setTimeout(function(){t.hidden=true},2600)}
 /* undo a scan made by mistake: the row is marked «undone» on the sheet (nothing is deleted) */
-function doUndo(code){var p=parse(code),L=slog(),i=active(L,code);clearTimeout(cd);if(i<0){again();return}
-  function fin(st,h,msg){var M=slog(),k=active(M,code);if(k>=0){M[k].s=st;setLog(M)}count(-1);beep(false);note('warn',h,p,msg,'↩')}
-  if(testMode()){fin('undone','Undone','Removed. Now scan the right code.');return}
-  if(L[i].s==='queued'){setQueue(queue().filter(function(x){return x!==code}));fin('undone','Undone','Removed. Now scan the right code.');return}
-  scr('wait','Undoing…',p,'');
-  sendUndo(code).then(function(j){if(j&&j.ok)fin('undone','Undone','Removed. Now scan the right code.');
-    else{beep(false);scr('bad','Not undone',p,'Try again ('+(j&&j.err||'error')+').',{btns:[['undo','out','↩ Try the undo again',code],['next','pri','⌖ Scan again']]})}},
-    function(){var q=queue();if(q.indexOf('!'+code)<0){q.push('!'+code);setQueue(q)}fin('undoq','Undo saved',navigator.onLine===false?'No internet. The undo will be sent automatically.':'Could not reach the dashboard. The undo will be sent automatically.')})}
+function doUndo(code,quiet){var p=parse(code),L=slog(),i=active(L,code);clearTimeout(cd);if(i<0){if(!quiet)again();return}
+  /* owner 25/11/2026 (16:30): the undo happens at once (no question, no «Undoing…» screen); it is sent in the background,
+     after the scan itself has reached the dashboard, and kept on the phone to send later if there is no internet */
+  var was=L[i].s;L[i].s='undone';setLog(L);count(-1);beep(false);lastHit={t:code,at:Date.now()};   /* the wrong sticker may still be in front of the camera */
+  if(quiet)lateNote('Undone · '+code);else note('warn','Undone',p,'Removed. Now scan the right code.','↩');
+  if(testMode())return;
+  if(was==='queued'){setQueue(queue().filter(function(x){return x!==code}));return}
+  function later(){var M=slog();for(var k=0;k<M.length;k++)if(M[k].c===code&&M[k].s==='undone'){M[k].s='undoq';setLog(M);break}var q=queue();if(q.indexOf('!'+code)<0){q.push('!'+code);setQueue(q)}}
+  (pend[code]||Promise.resolve()).then(function(){},function(){}).then(function(){
+    var q=queue();if(q.indexOf(code)>=0){setQueue(q.filter(function(x){return x!==code}));return}   /* the scan never left the phone */
+    return sendUndo(code).then(function(j){if(!(j&&j.ok))later()},later)})}
 function flush(){var q=queue();if(!q.length||testMode())return;var c=q[0],u=c.charAt(0)==='!',code=u?c.slice(1):c;
   (u?sendUndo(code):send(parse(code))).then(function(j){if(!(j&&j.ok))return;setQueue(queue().filter(function(x){return x!==c}));
     var L=slog();for(var k=0;k<L.length;k++)if(L[k].c===code&&L[k].s===(u?'undoq':'queued')){L[k].s=u?'undone':'ok';setLog(L);break}
