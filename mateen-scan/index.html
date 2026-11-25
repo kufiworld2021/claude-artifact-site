@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#3B2719">
+<meta name="theme-color" content="#6E4B34">
 <title>MATEEN SCAN</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -12,69 +12,125 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MATEEN SCAN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
-:root{--wood:#3B2719;--wood2:#6E4B34;--sand:#F3EBDF;--ink:#1E1914;--ok:#1F8A4C;--warn:#B7801A;--bad:#B23A2A;--card:#FFFFFF}
+/* MATEEN SCAN · the look the owner approved on 25/11/2026 (walnut band with today's count, two wide buttons, green check).
+   No login. «Scan operations» works; «Scan BOLISA» is a separate scanner, not built yet (soon).
+   Numbers use the UI font (no dotted zero). Light only. */
+:root{--walnut:#6E4B34;--sand:#D8C7AE;--ivory:#F6F1E8;--ink:#2B2520;--mute:#7D7266;--line:#E6DED2;--ok:#0F7B3D;--warn:#B7801A;--bad:#A33D28;
+  --f:'Readex Pro','Noto Sans Arabic',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
-body{background:var(--sand);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
-header{background:var(--wood);color:#fff;padding:calc(14px + env(safe-area-inset-top,0px)) 20px 16px;display:flex;align-items:center;justify-content:space-between}
-header b{font-size:18px;letter-spacing:.06em;white-space:nowrap}
-header .brand{display:flex;align-items:center;gap:12px;min-width:0}
-header .brand img{height:44px;width:44px;border-radius:11px;flex:none}
-#inst{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 16px 0;padding:12px 14px;border:0;border-radius:14px;background:#F2C14E;color:#3B2719;font:inherit;font-size:16px;font-weight:800;cursor:pointer}
-#inst[hidden]{display:none}
-#ios{margin:12px 16px 0;padding:12px 14px;border-radius:14px;background:#fff;color:#3B2719;font-size:14px;line-height:1.6;text-align:center;direction:rtl}
-#ios[hidden]{display:none}
-header span{font-size:13px;opacity:.85}
-header em{font-style:normal;text-align:right;font-size:11px;letter-spacing:.08em;opacity:.9}
-header em strong{display:block;font-size:26px;letter-spacing:0}
-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:20px}
-#scan{width:min(70vw,260px);aspect-ratio:1;border-radius:50%;border:0;background:var(--wood);color:#fff;font-size:34px;font-weight:800;letter-spacing:.08em;box-shadow:0 10px 30px rgba(59,39,25,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
-#scan svg{width:64px;height:64px}
-#scan:active{transform:scale(.97)}
-#last{min-height:22px;font-size:15px;color:var(--wood2);text-align:center}
-#queue{font-size:13px;color:var(--warn);text-align:center}
-#mode{display:inline-block;margin-top:4px;font-size:11px;font-weight:800;letter-spacing:.08em;background:#F2C14E;color:#3B2719;border-radius:6px;padding:2px 8px}
-#tlog{width:min(100%,380px);display:flex;flex-direction:column;gap:6px}
-#tlog .row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border-radius:10px;padding:8px 8px 8px 12px;font-size:14px}
-#tlog .txt{display:flex;flex-direction:column;min-width:0}
-#tlog b{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}#tlog span{color:var(--wood2);font-size:13px}
-#tlog .off{opacity:.55}#tlog .off b{text-decoration:line-through}
-#tlog .ub{flex:none;min-height:40px;padding:8px 12px;border:1.5px solid var(--bad);border-radius:8px;background:#fff;color:var(--bad);font-size:13px;font-weight:800;letter-spacing:.05em}
-.full{position:fixed;inset:0;z-index:5}
-#cam{background:#000}
-#cam video{width:100%;height:100%;object-fit:cover}
-#cam .frame{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
-#cam .frame i{width:min(72vw,300px);aspect-ratio:1;border:4px solid #fff;border-radius:18px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
-#cam .tip{position:absolute;left:0;right:0;bottom:calc(90px + env(safe-area-inset-bottom,0px));text-align:center;color:#fff;font-size:16px;font-weight:600}
-#close{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:16px;width:52px;height:52px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:26px}
-#res{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;color:#fff}
-#res.ok{background:var(--ok)}#res.dup{background:var(--warn)}#res.bad{background:var(--bad)}#res.wait{background:var(--wood2)}
-#res .big{font-size:46px;font-weight:900;line-height:1}
-#res .stage{font-size:26px;font-weight:700}
-#res .ord{font-size:20px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;opacity:.95}
-#res .msg{font-size:15px;opacity:.9;max-width:320px}
-#res .tap{position:absolute;bottom:calc(30px + env(safe-area-inset-bottom,0px));font-size:14px;opacity:.85}
-#res .pbtn{margin-top:14px;min-width:220px;padding:18px 26px;border:0;border-radius:16px;background:#fff;color:var(--bad);font-size:22px;font-weight:800;letter-spacing:.06em}
-#res.ask{background:var(--wood)}
-#res .two{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
-#res .two .pbtn{min-width:180px}
-#res .nbtn{margin-top:14px;min-width:120px;padding:18px 26px;border:2px solid #fff;border-radius:16px;background:transparent;color:#fff;font-size:22px;font-weight:800}
-#res .ubig{margin-top:22px;min-width:250px;padding:16px 24px;border:2px solid #fff;border-radius:14px;background:rgba(0,0,0,.12);color:#fff;font-size:18px;font-weight:800;letter-spacing:.05em}
+body{background:var(--ivory);color:var(--ink);font-family:var(--f);font-variant-numeric:tabular-nums;font-size:14px;line-height:1.45;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:2px solid var(--walnut);outline-offset:2px}
 [hidden]{display:none!important}
+.ar{direction:rtl;unicode-bidi:isolate}
+.app{height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;direction:ltr}
+.view{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
+/* home */
+.band{flex:none;color:#fff;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 62px;border-radius:0 0 30px 30px;background:radial-gradient(120% 100% at 15% 0%,rgba(255,255,255,.16),rgba(255,255,255,0) 62%),var(--walnut)}
+.brow{display:flex;align-items:center;gap:10px}
+.logo{display:block;width:40px;height:40px;border-radius:11px;flex:none}
+.bt b{display:block;font-size:17px;letter-spacing:.05em;line-height:1.2}
+.bt small{display:block;font-size:12px;color:var(--sand)}
+.bnum{text-align:center;margin-top:8px;line-height:1}
+.bnum b{display:block;font-size:56px}
+.bnum small{display:block;margin-top:7px;font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--sand)}
+.tiles{position:relative;z-index:1;flex:1 0 auto;max-height:380px;margin-top:-46px;padding:0 14px 14px;display:grid;grid-template-columns:1fr;grid-template-rows:1fr 1fr;gap:12px}
+.tile{position:relative;display:flex;align-items:center;gap:12px;min-width:0;width:100%;min-height:132px;border:2px solid transparent;border-radius:24px;padding:14px;text-align:left;background:#fff}
+.tile.on{box-shadow:0 10px 26px rgba(43,37,32,.16)}
+.tile.on:active{transform:scale(.985)}
+.tile.off{border:2px dashed #E3A9A2;cursor:default}
+.ti{width:84px;height:84px;border-radius:24px;display:grid;place-items:center;flex:none}
+.ti svg{width:46px;height:46px}
+.tile.on .ti{background:var(--walnut);color:#fff}
+.tile.off .ti{background:#FBE9E7;color:#C62828}
+.tt{flex:1;min-width:0}
+.tt b{display:block;font-size:20px;line-height:1.15}
+.tt em{display:block;font-style:normal;font-size:17px;font-weight:600;margin-top:3px;color:var(--walnut);text-align:left}
+.tile.off .tt b{color:#C62828}
+.tile.off .tt em{color:var(--mute)}
+.tgo{width:46px;height:46px;border-radius:50%;background:var(--walnut);color:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+.soon{position:absolute;top:12px;right:12px;background:var(--sand);color:var(--walnut);border-radius:99px;padding:4px 10px;font-size:11px;font-weight:700;white-space:nowrap}
+#inst{flex:none;display:flex;align-items:center;justify-content:center;gap:8px;margin:0 14px 12px;min-height:50px;padding:10px 14px;border-radius:16px;background:var(--sand);color:var(--walnut);font-size:15px;font-weight:700}
+#ios{flex:none;margin:0 14px 12px;padding:12px 14px;border-radius:16px;background:#fff;border:1px solid var(--line);color:var(--walnut);font-size:13.5px;line-height:1.6;text-align:center;direction:rtl}
+#mode{flex:none;align-self:center;margin:0 14px 10px;font-size:11px;font-weight:700;letter-spacing:.06em;background:#F2C14E;color:#3B2719;border-radius:8px;padding:3px 10px}
+#queue{flex:none;margin:0 14px;font-size:13px;font-weight:600;color:var(--warn);text-align:center}
+#queue:not(:empty){margin-bottom:10px}
+/* last scan card (home + scanner) */
+.lastc{flex:none;background:#fff;color:var(--ink);border-radius:18px;padding:12px 14px}
+.home .lastc{margin:auto 14px calc(16px + env(safe-area-inset-bottom,0px));border:1px solid var(--line)}
+.lastc small{font-size:10.5px;color:var(--mute);font-weight:700;letter-spacing:.04em}
+.lrow{display:flex;align-items:center;gap:10px;margin-top:6px}
+.lrow b{display:block}
+.meta{color:var(--mute);font-size:12px}
+/* the approved check: green disc · white ring · white tick */
+.chk{border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.chk.s{width:28px;height:28px;font-size:13px;box-shadow:inset 0 0 0 2px var(--ok),inset 0 0 0 3.5px #fff}
+.chk.b{width:96px;height:96px;font-size:48px;box-shadow:inset 0 0 0 7px var(--ok),inset 0 0 0 11px #fff}
+/* scanner: the camera fills the screen · every code it can read gets a box · the worker taps the one he wants */
+.full{position:fixed;inset:0;z-index:5}
+#cam{background:#000;color:#fff;overflow:hidden;touch-action:manipulation;direction:ltr}
+#cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.camh{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 28px;font-weight:700;font-size:15px;background:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,0));pointer-events:none}
+#close{pointer-events:auto;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:22px;flex:none}
+.camb{position:absolute;left:0;right:0;bottom:0;padding:44px 12px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.66));pointer-events:none}
+.tip{text-align:center;font-size:15px;font-weight:600;margin-bottom:10px;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.tip.no{color:#FFD9A0}
+#cam .lastc{margin:0}
+.ring{position:absolute;width:68px;height:68px;margin:-34px 0 0 -34px;border:3px solid #fff;border-radius:50%;pointer-events:none;animation:ring .5s ease-out forwards}
+@keyframes ring{from{transform:scale(1.4);opacity:1}to{transform:scale(.7);opacity:0}}
+/* result screens */
+#res{display:flex;flex-direction:column;background:var(--ivory);color:var(--ink);direction:ltr}
+.resb{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:calc(20px + env(safe-area-inset-top,0px)) 20px 20px;text-align:center}
+#res h2{margin:0;font-size:22px;color:var(--ok)}
+#res.warn h2{color:var(--warn)}
+#res.bad h2{color:var(--bad)}
+#res.wait h2{color:var(--walnut)}
+.rc{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;width:100%;max-width:420px}
+.rc .no{font-size:21px;font-weight:700;overflow-wrap:anywhere}
+.rc .en{color:var(--mute)}
+.rc .arn{color:var(--walnut);font-weight:700}
+.bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:6px}
+.nx{font-size:11.5px;margin-top:6px;color:var(--mute)}
+.msg{margin:0;color:var(--mute);max-width:340px}
+.acts{flex:none;width:100%;max-width:480px;margin:0 auto;padding:0 14px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;border-radius:99px;font-weight:700;font-size:15px;padding:0 14px}
+.btn.pri{background:var(--walnut);color:#fff}
+.btn.out{background:#fff;border:1px solid var(--line);color:var(--bad)}
+.btn.sec{background:#fff;border:1px solid var(--line);color:var(--walnut)}
+.big{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;font-size:46px;font-weight:700;color:#fff}
+.big.warn{background:var(--warn)}
+.big.bad{background:var(--bad)}
+.big.wait{background:var(--walnut)}
+@media (prefers-reduced-motion:no-preference){.chk.b{animation:pop .35s ease}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
 </style>
 </head>
 <body>
-<header><div class="brand"><img src="app-logo-128.png" alt="MATEEN SCAN"><div><b>MATEEN SCAN</b><br><span id="cyc">Factory floor updates</span><br><span id="mode" hidden>TEST MODE · saved on this phone only</span></div></div><em><strong id="cnt">0</strong>DONE TODAY</em></header>
-<button id="inst" type="button" hidden>📲 ثبّت تطبيق MATEEN SCAN على الجوال</button>
-<div id="ios" hidden>📲 عشان تثبّته كتطبيق: اضغط زر المشاركة <b>⎋</b> تحت، بعدها <b>«إضافة إلى الشاشة الرئيسية»</b></div>
-<main>
-  <button id="scan" type="button" aria-label="Scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></svg>SCAN</button>
-  <div id="last"></div>
+<div class="app" id="app">
+<div class="view home" id="home">
+  <div class="band"><div class="brow"><img class="logo" src="app-logo-128.png" alt=""><span class="bt"><b>MATEEN SCAN</b><small id="cyc">MATEEN FACTORY · Cycle NOV.08</small></span></div><div class="bnum"><b id="cnt">0</b><small>DONE TODAY</small></div></div>
+  <div class="tiles">
+    <button type="button" class="tile on" id="scan"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V6a3 3 0 0 1 3-3h2M16 3h2a3 3 0 0 1 3 3v2M21 16v2a3 3 0 0 1-3 3h-2M8 21H6a3 3 0 0 1-3-3v-2M3 12h18"/></svg></span><span class="tt"><b>Scan operations</b><em class="ar">مسح العمليات</em></span><span class="tgo">→</span></button>
+    <div class="tile off" id="awb" aria-disabled="true"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke-width="2" d="M3 8V6a3 3 0 0 1 3-3h2M16 3h2a3 3 0 0 1 3 3v2M21 16v2a3 3 0 0 1-3 3h-2M8 21H6a3 3 0 0 1-3-3v-2"/><g stroke-linecap="butt"><path stroke-width="1.7" d="M7.2 7.5v9M12 7.5v9M16.8 7.5v9"/><path stroke-width="1" d="M9.5 7.5v9M14.4 7.5v9"/></g></svg></span><span class="tt"><b>Scan BOLISA</b><em class="ar">مسح البوليصات</em></span><span class="soon">SOON · <span class="ar">قريباً</span></span></div>
+  </div>
+  <button id="inst" type="button" hidden>📲 ثبّت تطبيق MATEEN SCAN على الجوال</button>
+  <div id="ios" hidden>📲 عشان تثبّته كتطبيق: اضغط زر المشاركة <b>⎋</b> تحت، بعدها <b>«إضافة إلى الشاشة الرئيسية»</b></div>
+  <div id="mode" hidden>TEST MODE · saved on this phone only</div>
   <div id="queue"></div>
-  <div id="tlog"></div>
-</main>
-<section id="cam" class="full" hidden><video id="v" playsinline muted></video><div class="frame"><i></i></div><div class="tip">Point at the task QR · 20–30 cm away</div><button id="close" type="button" aria-label="Close">×</button></section>
+  <div class="lastc" id="lastc"></div>
+</div>
+</div>
+<section id="cam" class="full" hidden><video id="v" playsinline muted></video><canvas id="ov"></canvas>
+  <div class="camh"><button id="close" type="button" aria-label="Back">←</button><span>Scan operations · <span class="ar">مسح العمليات</span></span></div>
+  <div class="camb"><div class="tip" id="tip"></div><div class="lastc" id="lastc2"></div></div>
+</section>
 <section id="res" class="full" hidden></section>
 <input type="file" id="pic" accept="image/*" capture="environment" hidden>
 <script src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.5/dist/iife/reader/index.js"></script>
@@ -83,8 +139,15 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 (function(){
 /* the Apps Script web-app URL of the sheet «Mateen Scans · مسح المهام» */
 var API='https://script.google.com/macros/s/AKfycbwRmVnZL-xQihVj-hjFLhSJwSIeQfMCfi2r6xUy6h_TSddMUIK0ePBHJ2Zd2-_3ylOVKw/exec';
-var STG={P1:'Tab cutting',P2:'Body cutting',P3:'Back & decor',P4:'Drilling',P5:'Tab balancing',P9:'Base balancing',P8:'Body balancing',P6:'Tab edge banding',PA:'Base edge banding',P7:'Body edge banding',CL:'Long cladding',IK:'IKEA design',LD:'LED in top',AC:'Accessories',K1:'Tab wrapping',K2:'Body boxes',KF:'Box filling',K3:'PKG wrapping',W1:'AWB piece 1',W2:'AWB piece 2',W3:'AWB piece 3',W4:'AWB piece 4',W5:'AWB piece 5',W6:'AWB piece 6'};
-var $=function(id){return document.getElementById(id)},stream=null,timer=null,busy=false,back=null,liveFail=false;
+/* stage names: English · Arabic (as on the operations board) */
+var STG={P1:['Tab cutting','قص السطح'],P2:['Body cutting','قص الهيكل'],P3:['Back & decor','الظهر والديكور'],P4:['Drilling','الحفر'],P5:['Tab balancing','موازنة السطح'],P9:['Base balancing','موازنة القاعدة'],P8:['Body balancing','موازنة الهيكل'],
+  P6:['Tab edge banding','شريط السطح'],PA:['Base edge banding','شريط القاعدة'],P7:['Body edge banding','شريط الهيكل'],CL:['Long cladding','التكسيات الطويلة'],IK:['IKEA design','تصميم إيكيا'],LD:['LED in top','تركيب LED'],AC:['Accessories','تعبئة الإكسسوارات'],
+  K1:['Tab wrapping','تغليف السطح'],K2:['Body boxes','كراتين الهيكل'],KF:['Box filling','تعبئة الكراتين'],K3:['PKG wrapping','تغليف البكج'],W1:['AWB piece 1','البوليصة · قطعة 1'],W2:['AWB piece 2','البوليصة · قطعة 2'],W3:['AWB piece 3','البوليصة · قطعة 3'],W4:['AWB piece 4','البوليصة · قطعة 4'],W5:['AWB piece 5','البوليصة · قطعة 5'],W6:['AWB piece 6','البوليصة · قطعة 6']};
+/* the task list of each NOV.08 order (same as the path sheets) · used only for the «3 / 18 tasks · Next» line on the done screen */
+var AP={"301337790":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","LD","AC","K1","K2","KF","K3","W1","W2","W3"],"301356248":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","CL","LD","AC","K1","K2","KF","W1","W2"],"301187178":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","CL","LD","AC","K1","K2","KF","K3","W1","W2","W3"],"301304333":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","LD","AC","K1","K2","KF","W1","W2"],"11860595871":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","LD","AC","K1","K2","KF","W1","W2"],"11844182016":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"11856512704":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"11858069409":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"11862941590":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"11864063419":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"11864399798":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"11864575691":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"301266425":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","CL","LD","AC","K1","K2","KF","W1","W2"],"300869179":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","CL","LD","AC","K1","K2","KF","K3","W1","W2","W3"],"300714423":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"],"301044060":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"],"11864668381":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"],"11858911377":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"],"11864075840":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"],"300981931":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","K3","W1","W2","W3"],"301376022":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","K3","W1","W2","W3","W4"],"11859022396":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"11861649084":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"11863680172":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"301398151":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"300980093":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"],"11863974283":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","AC","K2","KF","W1"],"301287151":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","CL","LD","AC","K1","K2","KF","K3","W1","W2","W3"],"11865044539":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"],"301373581":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","K3","W1","W2","W3"],"301174574":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"],"301060355":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","IK","LD","AC","K1","K2","KF","W1","W2"],"301116455":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","CL","LD","AC","K1","K2","KF","K3","W1","W2","W3"],"NSAIB0016768531":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"],"11861575071":["P1","P2","P3","P4","P5","P9","P8","P6","PA","P7","LD","AC","K1","K2","KF","W1","W2"]};
+var $=function(id){return document.getElementById(id)},stream=null,timer=null,busy=false,back=null,cd=null,cdN=0,liveFail=false,fromCam=false,
+  sid=0,BD=null,seen={},picking=false,tipMsg=null,tipT=null,idleT=null,pulled=0;
+function el(t,c){var e=document.createElement(t);if(c)e.className=c;return e}
 /* opened from the Apps Script link: save through google.script.run (no API link needed) */
 function gas(){return !!(window.google&&google.script&&google.script.run)}
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
@@ -93,121 +156,187 @@ function count(add){var k='cnt.'+today(),n=Math.max(0,+(ls(k)||0)+(add||0));if(a
 function queue(){try{return JSON.parse(ls('queue')||'[]')}catch(e){return []}}
 function setQueue(q){ls('queue',JSON.stringify(q));$('queue').textContent=q.length?q.length+' update(s) saved on this phone · sending when online':''}
 function parse(t){t=String(t||'').trim().toUpperCase().replace(/\s+/g,'');var m=/^([A-Z0-9-]+)\.([A-Z0-9]{1,3})$/.exec(t);return m?{code:t,no:m[1],st:m[2]}:null}
+function en(s){return STG[s]?STG[s][0]:s}
+function ar(s){return STG[s]?STG[s][1]:''}
+function hhmm(t){var d=new Date(t);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
 function beep(ok){try{var a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=ok?1250:330;o.connect(g);g.connect(a.destination);g.gain.value=.18;o.start();o.stop(a.currentTime+(ok?.12:.35))}catch(e){}if(navigator.vibrate)navigator.vibrate(ok?90:[60,60,60])}
-function show(c,big,p,msg){var r=$('res');r.className='full '+c;r.hidden=false;
-  r.innerHTML='<div class="big"></div><div class="stage"></div><div class="ord"></div><div class="msg"></div><div class="tap">Tap to continue</div>';
-  r.querySelector('.big').textContent=big;r.querySelector('.stage').textContent=p&&STG[p.st]?STG[p.st]:(p?p.st:'');r.querySelector('.ord').textContent=p?p.no:'';r.querySelector('.msg').textContent=msg||'';
-  clearTimeout(back);if(c!=='wait')back=setTimeout(home,2600)}
-function home(){clearTimeout(back);$('res').hidden=true}
+/* no bridge link yet (and not opened from Apps Script) → TEST MODE: scans are kept on this phone only */
+function testMode(){return !gas()&&API.indexOf('https://')!==0}
 function send(p){var dev=(navigator.userAgent||'').slice(0,60);
   if(gas())return new Promise(function(ok,no){google.script.run.withSuccessHandler(ok).withFailureHandler(no).saveScan(p.code,dev)});
   if(API.indexOf('https://')!==0)return Promise.resolve({setup:true});
   return fetch(API,{method:'POST',body:JSON.stringify({code:p.code,device:dev})}).then(function(r){return r.json()})}
-/* no bridge link yet (and not opened from Apps Script) → TEST MODE: scans are kept on this phone only */
-function testMode(){return !gas()&&API.indexOf('https://')!==0}
 function sendUndo(code){var dev=(navigator.userAgent||'').slice(0,60);
   if(gas())return new Promise(function(ok,no){google.script.run.withSuccessHandler(ok).withFailureHandler(no).undoScan(code,dev)});
   if(API.indexOf('https://')!==0)return Promise.resolve({ok:true});
   return fetch(API,{method:'POST',body:JSON.stringify({code:code,device:dev,action:'undo'})}).then(function(r){return r.json()})}
 /* this phone's recent scans: {c:code, t:time, s:'ok'|'queued'|'undone'|'undoq', m:'test'|'live'} */
 function slog(){try{var L=JSON.parse(ls('scanlog')||'null');if(L)return L;return JSON.parse(ls('testlog')||'[]').map(function(x){return {c:x.c,t:x.t,s:'ok',m:'test'}})}catch(e){return []}}
-function setLog(L){ls('scanlog',JSON.stringify(L.slice(0,60)));showLog()}
+function setLog(L){ls('scanlog',JSON.stringify(L.slice(0,60)));showLast()}
 function active(L,code){for(var i=0;i<L.length;i++)if(L[i].c===code&&(L[i].s==='ok'||L[i].s==='queued'))return i;return -1}
 function addLog(code,st){var L=slog();L.unshift({c:code,t:Date.now(),s:st,m:testMode()?'test':'live'});setLog(L)}
-function hhmm(t){var d=new Date(t);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
-function showLog(){var box=$('tlog'),m=testMode()?'test':'live';box.textContent='';
-  slog().filter(function(x){return (x.m||'test')===m}).slice(0,6).forEach(function(x){var q=parse(x.c),d=document.createElement('div'),w=document.createElement('div'),a=document.createElement('b'),b=document.createElement('span'),off=x.s==='undone'||x.s==='undoq';
-    d.className='row'+(off?' off':'');w.className='txt';a.textContent=q?q.no+' · '+q.st:x.c;
-    b.textContent=(q&&STG[q.st]?STG[q.st]+' · ':'')+hhmm(x.t)+(x.s==='undone'?' · UNDONE':x.s==='undoq'?' · undo waiting':x.s==='queued'?' · waiting':'');
-    w.appendChild(a);w.appendChild(b);d.appendChild(w);
-    if(!off){var u=document.createElement('button');u.type='button';u.className='ub';u.textContent='UNDO';u.setAttribute('data-c',x.c);d.appendChild(u)}
-    box.appendChild(d)})}
-function lastTxt(p){$('last').textContent='Last: '+p.no+' · '+(STG[p.st]||p.st)}
-/* DONE screen with the MISTAKE button (stays 6 s) */
-function showDone(p,msg,big,c){show(c||'ok',big||'DONE ✓',p,msg);var r=$('res'),b=document.createElement('button');
-  b.type='button';b.id='undo';b.className='ubig';b.textContent='✕ MISTAKE · UNDO';b.setAttribute('data-c',p.code);r.insertBefore(b,r.querySelector('.tap'));
-  clearTimeout(back);back=setTimeout(home,6000)}
-function handle(raw){var p=parse(raw);if(!p){beep(false);show('bad','WRONG CODE',null,'This is not a Mateen task code.');return}
+/* the last scan card (home and scanner): the newest scan of this phone that still counts */
+function lastCard(box){var m=testMode()?'test':'live',L=slog().filter(function(x){return (x.m||'test')===m&&(x.s==='ok'||x.s==='queued')}),x=L[0],q=x&&parse(x.c),h=el('small');
+  box.textContent='';h.textContent='LAST SCAN';box.appendChild(h);
+  if(!q){var e=el('div','meta');e.style.marginTop='6px';e.textContent='No scans yet';box.appendChild(e);return}
+  var r=el('div','lrow'),c=el('span','chk s'),w=el('div'),b=el('b'),d=el('div','meta');c.textContent='✓';b.textContent=q.no+' · '+q.st;
+  d.appendChild(document.createTextNode(STG[q.st]?en(q.st)+' · ':''));if(ar(q.st)){var a=el('span','ar');a.textContent=ar(q.st);d.appendChild(a);d.appendChild(document.createTextNode(' · '))}
+  d.appendChild(document.createTextNode(hhmm(x.t)+(x.s==='queued'?' · waiting':'')));w.appendChild(b);w.appendChild(d);r.appendChild(c);r.appendChild(w);box.appendChild(r)}
+function showLast(){lastCard($('lastc'));lastCard($('lastc2'))}
+/* what is already done on the sheet (all phones) · only for the «d / n tasks · Next» line; never blocks a scan */
+var DONE=null;try{DONE=JSON.parse(ls('done')||'null')}catch(e){}
+function pull(){if(testMode()||gas()||Date.now()-pulled<60000)return;pulled=Date.now();var at=Date.now();
+  fetch(API+'?rows=1').then(function(r){return r.json()}).then(function(j){if(!j||!j.ok||!j.rows)return;var D={};
+    j.rows.forEach(function(r){if(r.status==='done')(D[r.order]=D[r.order]||{})[r.stage]=1});DONE={at:at,d:D};ls('done',JSON.stringify(DONE))}).catch(function(){pulled=0})}
+function prog(p){var ap=AP[p.no];if(!ap||!DONE||!DONE.d)return null;var D={},k,L=slog(),i,x,q,d=0,nx=null;for(k in (DONE.d[p.no]||{}))D[k]=1;
+  for(i=L.length-1;i>=0;i--){x=L[i];q=parse(x.c);if(!q||q.no!==p.no||(x.m||'test')!=='live')continue;
+    if(x.s==='queued')D[q.st]=1;else if(x.s==='undoq')delete D[q.st];else if(x.t>DONE.at){if(x.s==='ok')D[q.st]=1;else delete D[q.st]}}
+  ap.forEach(function(s){if(D[s])d++;else if(!nx)nx=s});return {d:d,n:ap.length,nx:nx}}
+/* one full screen for every result: icon · title · the order card · message · buttons */
+function scr(k,h,p,msg,o){o=o||{};var r=$('res'),b=el('div','resb'),ic=el('span',k==='ok'?'chk b':'big '+k),t=el('h2'),acts=el('div','acts');
+  clearTimeout(back);clearTimeout(cd);r.className='full '+k;r.textContent='';
+  ic.textContent=o.ic||(k==='ok'?'✓':k==='warn'?'!':k==='wait'?'…':'✕');t.textContent=h;b.appendChild(ic);b.appendChild(t);
+  if(p){var c=el('div','rc'),n=el('div','no'),e=el('div','en'),a=el('div','arn ar'),g=o.prog?prog(p):null;
+    n.textContent=p.no;e.textContent=p.st+(STG[p.st]?' · '+en(p.st):'');a.textContent=ar(p.st);c.appendChild(n);c.appendChild(e);if(ar(p.st))c.appendChild(a);
+    if(g){var bar=el('div','bar'),bi=el('i'),nx=el('div','nx');bi.style.width=Math.round(g.d/g.n*100)+'%';bar.appendChild(bi);nx.textContent=g.d+' / '+g.n+' tasks · '+(g.nx?'Next: '+en(g.nx):'All tasks done');c.appendChild(bar);c.appendChild(nx)}
+    b.appendChild(c)}
+  if(msg){var m=el('p','msg');m.textContent=msg;b.appendChild(m)}
+  (o.btns||[]).forEach(function(x){var u=el('button','btn '+x[1]);u.type='button';u.id=x[0];u.textContent=x[2];if(x[3])u.setAttribute('data-c',x[3]);acts.appendChild(u)});
+  r.appendChild(b);r.appendChild(acts);r.hidden=false;
+  if(o.then)back=setTimeout(o.then,o.ms||2600)}
+function home(){clearTimeout(back);clearTimeout(cd);$('res').hidden=true}
+/* after a result: the camera opens again when the scan came from it, otherwise the home */
+function again(){if(fromCam&&!liveFail&&!document.hidden)start();else home()}
+function note(k,h,p,msg,ic){scr(k,h,p,msg,{ic:ic,btns:[['next','pri','⌖ Scan again']],then:again})}
+/* DONE screen with the MISTAKE button (stays 6 s), then the scanner opens again */
+function showDone(p,msg,h,k){scr(k||'ok',h||'Task done',p,msg,{prog:true,ic:'✓',btns:[['undo','out','✕ Mistake · Undo (6)',p.code],['next','pri','⌖ Scan next']]});
+  cdN=6;(function tick(){cd=setTimeout(function(){var b=$('undo');if($('res').hidden||!b)return;cdN--;if(cdN<=0){again();return}b.textContent='✕ Mistake · Undo ('+cdN+')';tick()},1000)})()}
+/* one scan in «Scan operations»: only task codes ORDER.STAGE are accepted */
+function handle(raw){var p=parse(raw);if(!p){beep(false);note('bad','Not a task code',null,'BOLISA is scanned from «Scan BOLISA».');return}
   var L=slog(),i=active(L,p.code);
   if(testMode()){
-    if(i>=0){beep(false);show('dup','ALREADY DONE',p,'Test mode · scanned before on this phone.');return}
-    addLog(p.code,'ok');beep(true);count(1);lastTxt(p);showDone(p,'Test mode · saved on this phone only.');return}
-  if(i>=0&&L[i].s==='queued'){beep(false);show('dup','ALREADY DONE',p,'Already saved on this phone · waiting for internet.');return}
-  show('wait','Saving…',p,'');
+    if(i>=0){beep(false);note('warn','Already done',p,'Test mode · scanned before on this phone.');return}
+    addLog(p.code,'ok');beep(true);count(1);showDone(p,'Test mode · saved on this phone only.');return}
+  if(i>=0&&L[i].s==='queued'){beep(false);note('warn','Already done',p,'Already saved on this phone · waiting for internet.');return}
+  scr('wait','Saving…',p,'');
   send(p).then(function(j){
-    if(j&&j.setup){beep(false);show('bad','NOT SET UP',p,'The bridge link is missing. Ask the office.');return}
-    if(j&&j.ok&&!j.dup){beep(true);count(1);addLog(p.code,'ok');lastTxt(p);showDone(p,'Saved on the dashboard.')}
-    else if(j&&j.ok&&j.dup){beep(false);show('dup','ALREADY DONE',p,'This task was scanned before.')}
-    else{beep(false);show('bad','WRONG CODE',p,'Not accepted ('+(j&&j.err||'error')+').')}
-  }).catch(function(){var q=queue();if(q.indexOf(p.code)<0){q.push(p.code);setQueue(q)}beep(true);count(1);addLog(p.code,'queued');lastTxt(p);
-    showDone(p,navigator.onLine===false?'No internet. It will be sent automatically.':'Could not reach the dashboard. Saved on this phone, it will be sent automatically.','SAVED ON PHONE','dup')})}
+    if(j&&j.setup){beep(false);scr('bad','Not set up',p,'The bridge link is missing. Ask the office.',{btns:[['gohome','pri','Back']]});return}
+    if(j&&j.ok&&!j.dup){beep(true);count(1);addLog(p.code,'ok');showDone(p,'');pull()}
+    else if(j&&j.ok&&j.dup){beep(false);note('warn','Already done',p,'This task was scanned before.')}
+    else{beep(false);note('bad','Not accepted',p,'The dashboard refused this code ('+(j&&j.err||'error')+').')}
+  },function(){var q=queue();if(q.indexOf(p.code)<0){q.push(p.code);setQueue(q)}beep(true);count(1);addLog(p.code,'queued');
+    showDone(p,navigator.onLine===false?'No internet. It will be sent automatically.':'Could not reach the dashboard. Saved on this phone, it will be sent automatically.','Saved on phone','warn')})}
 /* undo a scan made by mistake: the row is marked «undone» on the sheet (nothing is deleted) */
-function askUndo(code){var p=parse(code),r=$('res');clearTimeout(back);r.className='full ask';r.hidden=false;
-  r.innerHTML='<div class="big">UNDO?</div><div class="stage"></div><div class="ord"></div><div class="msg">Only if this code was scanned by mistake.</div><div class="two"><button type="button" id="yes" class="pbtn">YES, UNDO</button><button type="button" id="no" class="nbtn">NO</button></div>';
-  r.querySelector('.stage').textContent=p&&STG[p.st]?STG[p.st]:(p?p.st:'');r.querySelector('.ord').textContent=p?p.no:code;r.querySelector('#yes').setAttribute('data-c',code)}
-function doUndo(code){var p=parse(code),L=slog(),i=active(L,code);if(i<0){home();showLog();return}
-  function fin(st,big,msg){var M=slog(),k=active(M,code);if(k>=0){M[k].s=st;setLog(M)}count(-1);if(p)$('last').textContent='Undone: '+p.no+' · '+(STG[p.st]||p.st);beep(false);show('dup',big,p,msg)}
-  if(testMode()){fin('undone','UNDONE ↩','Removed. Now scan the right code.');return}
-  if(L[i].s==='queued'){setQueue(queue().filter(function(x){return x!==code}));fin('undone','UNDONE ↩','Removed. Now scan the right code.');return}
-  show('wait','Undoing…',p,'');
-  sendUndo(code).then(function(j){if(j&&j.ok)fin('undone','UNDONE ↩','Removed from the dashboard. Now scan the right code.');else{beep(false);show('bad','NOT UNDONE',p,'Try again ('+(j&&j.err||'error')+').')}})
-    .catch(function(){var q=queue();if(q.indexOf('!'+code)<0){q.push('!'+code);setQueue(q)}fin('undoq','UNDO SAVED',navigator.onLine===false?'No internet. The undo will be sent automatically.':'Could not reach the dashboard. The undo will be sent automatically.')})}
+function doUndo(code){var p=parse(code),L=slog(),i=active(L,code);clearTimeout(cd);if(i<0){again();return}
+  function fin(st,h,msg){var M=slog(),k=active(M,code);if(k>=0){M[k].s=st;setLog(M)}count(-1);beep(false);note('warn',h,p,msg,'↩')}
+  if(testMode()){fin('undone','Undone','Removed. Now scan the right code.');return}
+  if(L[i].s==='queued'){setQueue(queue().filter(function(x){return x!==code}));fin('undone','Undone','Removed. Now scan the right code.');return}
+  scr('wait','Undoing…',p,'');
+  sendUndo(code).then(function(j){if(j&&j.ok)fin('undone','Undone','Removed. Now scan the right code.');
+    else{beep(false);scr('bad','Not undone',p,'Try again ('+(j&&j.err||'error')+').',{btns:[['undo','out','↩ Try the undo again',code],['next','pri','⌖ Scan again']]})}},
+    function(){var q=queue();if(q.indexOf('!'+code)<0){q.push('!'+code);setQueue(q)}fin('undoq','Undo saved',navigator.onLine===false?'No internet. The undo will be sent automatically.':'Could not reach the dashboard. The undo will be sent automatically.')})}
 function flush(){var q=queue();if(!q.length||testMode())return;var c=q[0],u=c.charAt(0)==='!',code=u?c.slice(1):c;
   (u?sendUndo(code):send(parse(code))).then(function(j){if(!(j&&j.ok))return;setQueue(queue().filter(function(x){return x!==c}));
     var L=slog();for(var k=0;k<L.length;k++)if(L[k].c===code&&L[k].s===(u?'undoq':'queued')){L[k].s=u?'undone':'ok';setLog(L);break}
     flush()}).catch(function(){})}
-function stop(){clearInterval(timer);timer=null;if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}$('cam').hidden=true;busy=false}
-function hit(t){if(busy)return;busy=true;stop();handle(t)}
-/* decoders: the phone's own BarcodeDetector (Android Chrome) + zxing-cpp (wasm) for iPhone and as a second try */
-var OPT={formats:['QRCode'],tryHarder:true,maxNumberOfSymbols:1};
+function stop(){sid++;clearInterval(timer);timer=null;clearTimeout(idleT);if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}$('cam').hidden=true;busy=false;picking=false;seen={}}
+function hit(t){if(busy)return;busy=true;stop();fromCam=true;handle(t)}
+/* decoders: the phone's own BarcodeDetector (Android Chrome) + zxing-cpp (wasm) for iPhone and as a second try; jsQR (plain JS) if the wasm reader cannot load.
+   Every reader returns a list of {t:text, p:[4 corners]} in the pixels of the picture it was given, so a tap can be matched to one code. */
+var OPTM={formats:['QRCode'],tryHarder:true,maxNumberOfSymbols:24},zwBad=false;
 function zw(){return !!(window.ZXingWASM&&ZXingWASM.readBarcodes)}
 function mkBD(){try{return 'BarcodeDetector' in window?new BarcodeDetector({formats:['qr_code']}):null}catch(e){return null}}
-function zwData(d){return ZXingWASM.readBarcodes(d,OPT).then(function(r){return r&&r.length&&r[0].text?r[0].text:null})}
-/* if the wasm reader cannot load (blocked or offline), jsQR (plain JS) takes over */
-var zwBad=false;
-function jq(d){try{if(window.jsQR){var r=jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'});return r&&r.data||null}}catch(e){}return null}
 function hasSoft(){return (zw()&&!zwBad)||!!window.jsQR}
-function soft(d){if(zw()&&!zwBad)return zwData(d).catch(function(){zwBad=true;return jq(d)});return Promise.resolve(jq(d))}
-function grab(src,w,h,max){var k=Math.min(1,max/Math.max(w,h)),c=document.createElement('canvas'),x;c.width=Math.round(w*k);c.height=Math.round(h*k);
-  x=c.getContext('2d',{willReadFrequently:true});x.drawImage(src,0,0,c.width,c.height);return {c:c,d:x.getImageData(0,0,c.width,c.height)}}
+/* a piece of the picture (sx,sy,sw,sh) drawn at scale k */
+function frame(src,sx,sy,sw,sh,k){var c=document.createElement('canvas'),x;c.width=Math.max(1,Math.round(sw*k));c.height=Math.max(1,Math.round(sh*k));
+  x=c.getContext('2d',{willReadFrequently:true});x.drawImage(src,sx,sy,sw,sh,0,0,c.width,c.height);return {c:c,x:x,k:k,x0:sx,y0:sy}}
+function back4(g,P){return P.map(function(q){return g?[q.x/g.k+g.x0,q.y/g.k+g.y0]:[q.x,q.y]})}
+function box4(b){return b?[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}]:null}
+function bdList(bd,src,g){return bd.detect(src).then(function(r){return (r||[]).filter(function(x){return x.rawValue}).map(function(x){var cp=x.cornerPoints&&x.cornerPoints.length===4?x.cornerPoints:box4(x.boundingBox);return {t:x.rawValue,p:cp?back4(g,cp):null}})})}
+function jqList(g,d){try{if(window.jsQR){var r=jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'}),l=r&&r.location;if(r&&r.data)return [{t:r.data,p:l?back4(g,[l.topLeftCorner,l.topRightCorner,l.bottomRightCorner,l.bottomLeftCorner]):null}]}}catch(e){}return []}
+function softList(g){var d;try{d=g.x.getImageData(0,0,g.c.width,g.c.height)}catch(e){return Promise.resolve([])}
+  if(zw()&&!zwBad){try{return ZXingWASM.readBarcodes(d,OPTM).then(function(r){return (r||[]).filter(function(x){return x.text}).map(function(x){var q=x.position;return {t:x.text,p:q&&q.topLeft?back4(g,[q.topLeft,q.topRight,q.bottomRight,q.bottomLeft]):null}})},function(){zwBad=true;return jqList(g,d)})}catch(e){zwBad=true}}
+  return Promise.resolve(jqList(g,d))}
+/* where the video really sits on the screen (it is cropped to fill it) */
+function vmap(v){var vw=v.videoWidth||1,vh=v.videoHeight||1,cw=v.clientWidth,ch=v.clientHeight,s=Math.max(cw/vw,ch/vh)||1;return {s:s,ox:(cw-vw*s)/2,oy:(ch-vh*s)/2,cw:cw,ch:ch}}
+function fresh(ms){var now=Date.now(),A=[];Object.keys(seen).forEach(function(t){if(now-seen[t].at<=ms)A.push({t:t,p:seen[t].p})});return A}
+function setTip(){var t=$('tip'),n=+($('cam').getAttribute('data-n')||0),a=el('span','ar');t.textContent='';
+  if(tipMsg){t.className='tip no';t.appendChild(document.createTextNode(tipMsg[0]+' · '));a.textContent=tipMsg[1]}
+  else{t.className='tip';t.appendChild(document.createTextNode((n?'Tap the code you want':'Point at the code, then tap it')+' · '));a.textContent=n?'اضغط على الباركود اللي تبيه':'وجّه الكاميرا على الباركود واضغط عليه'}
+  t.appendChild(a)}
+/* a white box on every code the camera can read right now */
+function paint(){var c=$('ov'),v=$('v'),m=vmap(v),r=Math.min(2,window.devicePixelRatio||1),A=fresh(700),x;
+  if(c.width!==Math.round(m.cw*r)||c.height!==Math.round(m.ch*r)){c.width=Math.round(m.cw*r);c.height=Math.round(m.ch*r)}
+  x=c.getContext('2d');x.setTransform(r,0,0,r,0,0);x.clearRect(0,0,m.cw,m.ch);x.lineJoin='round';
+  A.forEach(function(a){x.beginPath();a.p.forEach(function(q,i){var X=q[0]*m.s+m.ox,Y=q[1]*m.s+m.oy;if(i)x.lineTo(X,Y);else x.moveTo(X,Y)});x.closePath();
+    x.fillStyle='rgba(255,255,255,.18)';x.fill();x.lineWidth=6;x.strokeStyle='rgba(0,0,0,.45)';x.stroke();x.lineWidth=3;x.strokeStyle='#fff';x.stroke()});
+  $('cam').setAttribute('data-n',A.length);setTip()}
+function cen(p){var x=0,y=0;p.forEach(function(q){x+=q[0];y+=q[1]});return [x/p.length,y/p.length]}
+function rad(p){var c=cen(p),r=0;p.forEach(function(q){r=Math.max(r,Math.sqrt((q[0]-c[0])*(q[0]-c[0])+(q[1]-c[1])*(q[1]-c[1])))});return r}
+function inPoly(P,p){var i,j,a,b,inside=false;for(i=0,j=p.length-1;i<p.length;j=i++){a=p[i];b=p[j];if((a[1]>P[1])!==(b[1]>P[1])&&P[0]<(b[0]-a[0])*(P[1]-a[1])/(b[1]-a[1])+a[0])inside=!inside}return inside}
+/* the code under the finger: inside its box, or the nearest one when the finger lands just beside it · never a far one */
+function nearest(A,P){var best=null,bd=Infinity;A.forEach(function(a){if(!a.p)return;var c=cen(a.p),d=inPoly(P,a.p)?0:Math.sqrt((P[0]-c[0])*(P[0]-c[0])+(P[1]-c[1])*(P[1]-c[1]));if(d<=rad(a.p)*1.5&&d<bd){bd=d;best=a.t}});return best}
+function choose(L,P){var t=nearest(L,P);if(t)return t;return L.length===1&&!L[0].p?L[0].t:null}
+/* read only the area around the finger (two tries: a wider piece, then a closer one) */
+function areaRead(v,P){var vw=v.videoWidth,vh=v.videoHeight,m=Math.min(vw,vh);
+  function pass(S){S=Math.round(S);var x0=Math.max(0,Math.min(vw-S,Math.round(P[0]-S/2))),y0=Math.max(0,Math.min(vh-S,Math.round(P[1]-S/2))),g=frame(v,x0,y0,S,S,Math.min(3,Math.max(1,900/S)));
+    var a=BD?bdList(BD,g.c,g).catch(function(){return []}):Promise.resolve([]);
+    return a.then(function(L){return choose(L,P)||softList(g).then(function(L2){return choose(L2,P)})})}
+  return pass(m*.42).then(function(t){return t||pass(m*.24)})}
+function miss(){tipMsg=['No code under your finger','قرّب الكاميرا واضغط على الباركود نفسه'];setTip();clearTimeout(tipT);tipT=setTimeout(function(){tipMsg=null;setTip()},1900)}
+function ring(x,y){var r=el('i','ring');r.style.left=x+'px';r.style.top=y+'px';$('cam').appendChild(r);setTimeout(function(){if(r.parentNode)r.parentNode.removeChild(r)},540)}
+/* a tap helps the camera focus on that spot (only where the phone supports it) */
+function focusAt(P,v){try{var tr=stream.getVideoTracks()[0],cp=tr.getCapabilities&&tr.getCapabilities();if(cp&&cp.focusMode&&cp.focusMode.indexOf('continuous')>=0)tr.applyConstraints({advanced:[{focusMode:'continuous',pointsOfInterest:[{x:P[0]/v.videoWidth,y:P[1]/v.videoHeight}]}]}).catch(function(){})}catch(e){}}
+/* owner 25/11/2026: the camera never scans by itself (a sheet carries many codes side by side) · the worker taps the code he wants and only that one is read */
+function pick(x,y){var v=$('v');if(busy||picking||!stream||!v.videoWidth)return;var m=vmap(v),P=[(x-m.ox)/m.s,(y-m.oy)/m.s],old=nearest(fresh(600),P),job;
+  ring(x,y);picking=true;
+  /* first a fresh look at the spot under the finger (the phone may have moved since the boxes were drawn); the boxes are the second choice */
+  try{job=areaRead(v,P)}catch(e){job=Promise.resolve(null)}
+  job.then(function(t){return t},function(){return null}).then(function(t){picking=false;if(busy||!stream)return;t=t||old;if(t)hit(t);else{focusAt(P,v);miss()}})}
 /* live camera needs the https link opened in Chrome/Safari; otherwise the phone camera app takes a photo */
 function canLive(){return !liveFail&&!!(window.isSecureContext&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)}
-function start(){home();busy=false;
+function start(){home();if(stream)stop();busy=false;fromCam=true;
   if(!canLive()){if(liveFail){photo();return}askPhoto({name:window.isSecureContext?'NoCamera':'NotHttps'});return}
-  $('cam').hidden=false;var v=$('v'),req;
+  var my=++sid,v=$('v'),req;seen={};tipMsg=null;$('cam').hidden=false;paint();showLast();
+  clearTimeout(idleT);idleT=setTimeout(function(){if(my===sid){fromCam=false;stop()}},90000);   /* nobody tapped for 90 s: close the camera */
   try{req=navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false})}catch(e){liveFail=true;stop();askPhoto(e);return}
-  req.then(function(s){stream=s;v.srcObject=s;
+  req.then(function(s){if(my!==sid){s.getTracks().forEach(function(t){t.stop()});throw {name:'Cancelled'}}
+    stream=s;v.srcObject=s;
     try{var tr=s.getVideoTracks()[0],cp=tr.getCapabilities&&tr.getCapabilities();if(cp&&cp.focusMode&&cp.focusMode.indexOf('continuous')>=0)tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(function(){})}catch(e){}
-    return v.play()}).then(function(){var bd=mkBD(),n=0,fly=false;
-    if(!bd&&!hasSoft()){liveFail=true;stop();askPhoto({name:'NoScanner'});return}
-    timer=setInterval(function(){if(busy||!stream||!v.videoWidth||fly)return;fly=true;n++;
-      var job=bd&&(!hasSoft()||n%3)?bd.detect(v).then(function(r){return r&&r.length?r[0].rawValue:null}):soft(grab(v,v.videoWidth,v.videoHeight,zw()&&!zwBad?1920:1280).d);
-      job.then(function(t){fly=false;if(t)hit(t)},function(){fly=false})},180)
-  }).catch(function(e){liveFail=true;stop();askPhoto(e)})}
-function askPhoto(e){var n=(e&&e.name)||'',r=$('res');clearTimeout(back);r.className='full bad';r.hidden=false;
-  r.innerHTML='<div class="big">CAMERA BLOCKED</div><div class="msg"></div><button id="usepic" class="pbtn" type="button">TAKE PHOTO</button><div class="tap">Tap outside to go back</div>';
-  r.querySelector('.msg').textContent=(n==='NotAllowedError'?'The camera is not allowed for this page. Allow it in the browser settings, or':n==='NotHttps'?'Live scanning works only from the scanner link in Chrome or Safari. For now,':'The live camera does not work here. Please')+' take a photo of the QR.'+(n?' ('+n+')':'')}
+    return v.play()}).then(function(){if(my!==sid)return;var n=0,fly=false;BD=mkBD();
+    if(!BD&&!hasSoft()){liveFail=true;stop();askPhoto({name:'NoScanner'});return}
+    timer=setInterval(function(){if(busy||!stream||!v.videoWidth||fly)return;fly=true;n++;var job;
+      try{job=BD&&(!hasSoft()||n%3)?bdList(BD,v,null):softList(frame(v,0,0,v.videoWidth,v.videoHeight,Math.min(1,(zw()&&!zwBad?1920:1280)/Math.max(v.videoWidth,v.videoHeight))))}catch(e){fly=false;return}
+      job.then(function(L){fly=false;if(my!==sid||!stream)return;var now=Date.now();L.forEach(function(a){if(a.p)seen[a.t]={p:a.p,at:now}});paint()},function(){fly=false})},180)
+  }).catch(function(e){if((e&&e.name==='Cancelled')||my!==sid)return;liveFail=true;stop();askPhoto(e)})}
+function askPhoto(e){var n=(e&&e.name)||'';
+  scr('bad','Camera blocked',null,(n==='NotAllowedError'?'The camera is not allowed for this page. Allow it in the browser settings, or':n==='NotHttps'?'Live scanning works only from the scanner link in Chrome or Safari. For now,':'The live camera does not work here. Please')+' take a photo of the QR.'+(n?' ('+n+')':''),
+    {btns:[['usepic','pri','Take photo'],['gohome','sec','Back']]})}
 function photo(){var f=$('pic');f.value='';f.click()}
 function loadImg(f){if(window.createImageBitmap)return createImageBitmap(f);return new Promise(function(ok,no){var i=new Image();i.onload=function(){ok(i)};i.onerror=no;i.src=URL.createObjectURL(f)})}
+/* a photo: the code nearest to the middle of the picture */
 function readPic(f){return loadImg(f).then(function(img){var W=img.width,H=img.height,sizes=[1600,2600,1000],i=0,bd=mkBD();
-  function next(){if(i>=sizes.length)return Promise.reject(new Error('none'));var g=grab(img,W,H,sizes[i++]);
-    var a=bd?bd.detect(g.c).then(function(r){return r&&r.length?r[0].rawValue:null},function(){return null}):Promise.resolve(null);
-    return a.then(function(t){return t||soft(g.d)}).then(function(t){return t||next()},function(){return next()})}
+  function mid(L){var best=null,bdist=Infinity;L.forEach(function(a){var c=a.p?cen(a.p):null,d=c?Math.sqrt((c[0]-W/2)*(c[0]-W/2)+(c[1]-H/2)*(c[1]-H/2)):1e9;if(d<bdist){bdist=d;best=a.t}});return best}
+  function next(){if(i>=sizes.length)return Promise.reject(new Error('none'));var g=frame(img,0,0,W,H,Math.min(1,sizes[i++]/Math.max(W,H)));
+    var a=bd?bdList(bd,g.c,g).catch(function(){return []}):Promise.resolve([]);
+    return a.then(function(L){return mid(L)||softList(g).then(mid)}).then(function(t){return t||next()},function(){return next()})}
   return next()})}
-$('pic').addEventListener('change',function(){var f=this.files&&this.files[0];if(!f)return;show('wait','Reading…',null,'');
-  readPic(f).then(function(t){handle(t)},function(){beep(false);show('bad','NO CODE',null,'Could not read the QR. Take the photo closer, flat and sharp.')})});
-$('scan').addEventListener('click',start);
-$('close').addEventListener('click',stop);
+$('pic').addEventListener('change',function(){var f=this.files&&this.files[0];if(!f)return;scr('wait','Reading…',null,'');
+  readPic(f).then(function(t){handle(t)},function(){beep(false);scr('bad','No code',null,'Could not read the QR. Take the photo closer, flat and sharp.',{btns:[['usepic','pri','Take photo'],['gohome','sec','Back']]})})});
+$('scan').addEventListener('click',function(){start()});
+$('close').addEventListener('click',function(){fromCam=false;stop()});
+$('cam').addEventListener('click',function(ev){if(ev.target&&ev.target.closest&&ev.target.closest('#close'))return;pick(ev.clientX,ev.clientY)});
 $('res').addEventListener('click',function(ev){var t=ev.target&&ev.target.closest?ev.target.closest('button'):null,id=t&&t.id;
   if(id==='usepic'){photo();return}
-  if(id==='undo'||id==='yes'){doUndo(t.getAttribute('data-c'));return}
-  if(id==='no'){home();return}
-  var r=$('res');if(!r.classList.contains('wait')&&!r.classList.contains('ask'))home()});
-$('tlog').addEventListener('click',function(ev){var t=ev.target&&ev.target.closest?ev.target.closest('button.ub'):null;if(t)askUndo(t.getAttribute('data-c'))});
-window.addEventListener('online',flush);
+  if(id==='undo'){doUndo(t.getAttribute('data-c'));return}
+  if(id==='next'){start();return}
+  if(id==='gohome'){fromCam=false;home();return}});
+window.addEventListener('online',function(){flush();pull()});
+/* the app went to the background: the camera closes */
+document.addEventListener('visibilitychange',function(){if(document.hidden&&!$('cam').hidden){fromCam=false;stop()}});
 count(0);setQueue(queue());flush();
 if(testMode())$('mode').hidden=false;
-showLog();
+showLast();setTip();pull();
 /* load the reader early so the first scan is fast */
 try{if(window.ZXingWASM)ZXingWASM.prepareZXingModule({fireImmediately:true}).catch(function(){})}catch(e){}
 /* a task link opened from the normal camera: ?c=301287151.P1 */
